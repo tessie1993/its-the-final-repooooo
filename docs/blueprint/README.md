@@ -28,11 +28,30 @@ Everything in the source except Kotlin now lives in [`geode/`](../../geode):
 | CI workflows (Gradle-based, kept for reference, inactive in a subfolder) | `geode/.github/workflows/` | |
 | Third-party native libs as **pinned git submodules** | `geode/third_party/{projectm,kissfft,taglib,oboe}` | |
 
+Also imported, for reference: the Gradle wrapper (`gradle/`, `gradlew*`), `gradle.properties`,
+the dependency version catalog (`gradle/libs.versions.toml`), and the detekt config and baselines.
+
 Left out on purpose:
 
-- every `.kt` file (290 files, 54,844 LOC) and every `.kts` Gradle script;
-- `build-logic/` (Kotlin Gradle convention plugins), `config/detekt/`, the `*/detekt-baseline.xml` files, `gradle/`, `gradlew*`, `gradle.properties`, `.idea/`;
-- the empty `engine/` module folders that only held Kotlin.
+- every `.kt` file (290 files, 54,844 LOC) and every `.kts` Gradle script (Kotlin DSL), including `build-logic/`;
+- `.idea/` (machine-specific IDE state, also ignored by `.gitignore`).
+
+A file-by-file comparison against the source confirms nothing else is missing.
+
+### Build settings that lived in the `.kts` scripts
+
+These are carried over so they are not lost with the Kotlin build scripts:
+
+| Setting | Value |
+|---|---|
+| `applicationId` / `namespace` | `dev.geode` (debug: suffix `.debug`, version suffix `-debug`) |
+| Version | `versionName 1.8.0`, `versionCode 32` |
+| SDK levels | `minSdk 26`, `targetSdk 36`, `compileSdk 37` |
+| NDK / CMake | NDK `28.0.13004108`, CMake `3.22.1`, `-DANDROID_STL=c++_shared`, root `CMakeLists.txt` |
+| ABIs | `arm64-v8a`, `x86_64` |
+| Release | minified; signing from `keystore.properties` or the `GEODE_KEYSTORE*` env vars (see `keystore.properties.example`) |
+| FileProvider authority | `${applicationId}.presets` |
+| Library versions | `gradle/libs.versions.toml` |
 
 Submodule pins: projectM **v4.1.7** (the version the source's patch is written for, and
 `tools/projectm-v4.1.7-render-fbo-backport.patch` applies cleanly to it), kissfft
