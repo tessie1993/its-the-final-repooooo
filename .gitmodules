@@ -1,0 +1,12 @@
+[submodule "geode/third_party/projectm"]
+	path = geode/third_party/projectm
+	url = https://github.com/projectM-visualizer/projectm
+[submodule "geode/third_party/kissfft"]
+	path = geode/third_party/kissfft
+	url = https://github.com/mborgerding/kissfft
+[submodule "geode/third_party/taglib"]
+	path = geode/third_party/taglib
+	url = https://github.com/taglib/taglib.git
+[submodule "geode/third_party/oboe"]
+	path = geode/third_party/oboe
+	url = https://github.com/google/oboe.git
