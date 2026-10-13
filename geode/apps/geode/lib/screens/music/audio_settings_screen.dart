@@ -3,6 +3,7 @@ import '../../components/components.dart';
 import '../../state/geode_app_state.dart';
 import '../../scene/gel_float.dart';
 import '../../theme/geode_theme.dart';
+import '../../three_d/eq_3d.dart';
 import 'music_widgets.dart';
 
 class AudioSettingsScreen extends StatelessWidget {
@@ -52,6 +53,10 @@ class AudioSettingsScreen extends StatelessWidget {
                   onChanged: music.equalizerAvailable ? music.setEqualizerEnabled : null),
               ]),
               const SizedBox(height: 8),
+              SizedBox(height: 190, child: SpectrumTerrain3D(analysis: music.analysis,
+                gains: music.equalizerEnabled ? music.eqGains : const [],
+                minGain: music.eqMinGain, maxGain: music.eqMaxGain,
+                fallback: const SizedBox.shrink())),
               if (!music.equalizerAvailable)
                 Text('The equalizer is available with supported Android audio output. '
                   'Your playback controls remain available here.', style: text.bodyMedium)

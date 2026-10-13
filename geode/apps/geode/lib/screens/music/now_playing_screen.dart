@@ -6,6 +6,7 @@ import '../../media/music_controller.dart';
 import '../../scene/gel_float.dart';
 import '../../state/geode_app_state.dart';
 import '../../theme/geode_theme.dart';
+import '../../three_d/medallion_3d.dart';
 import 'audio_settings_screen.dart';
 import 'lyrics_sheet.dart';
 import 'music_widgets.dart';
@@ -42,8 +43,12 @@ class NowPlayingScreen extends StatelessWidget {
               Text('YOUR MUSIC, NATURALLY', style: text.labelSmall),
               const SizedBox(height: 25),
               GelFloat(controller: state.scene, anchor: const Offset(.5, .4), weight: 2.4,
-                child: PlayerOrb(controller: state.scene, playing: music.playing,
-                  enableNativeScene: state.enableDeviceServices)),
+                child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 360),
+                  child: AspectRatio(aspectRatio: 1 / .94, child: Medallion3D(
+                    music: music, nature: state.scene,
+                    semanticsLabel: 'Record for ${track.title}. Drag the bead ring to seek.',
+                    fallback: PlayerOrb(controller: state.scene, playing: music.playing,
+                      enableNativeScene: state.enableDeviceServices))))),
               const SizedBox(height: 30),
               Row(children: [
                 MusicArtwork(size: 62, radius: 20, track: track),

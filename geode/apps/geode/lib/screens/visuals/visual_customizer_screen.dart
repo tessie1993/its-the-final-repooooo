@@ -4,6 +4,7 @@ import '../../state/geode_app_state.dart';
 import '../../theme/geode_theme.dart';
 import 'visual_widgets.dart';
 import '../../three_d/asset_3d.dart';
+import '../../three_d/crystal_viewer.dart';
 
 class VisualCustomizerScreen extends StatefulWidget {
   const VisualCustomizerScreen({super.key, required this.state});
@@ -26,6 +27,15 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
         child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 780),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _preview(context),
+            const SizedBox(height: 16),
+            VisualFloat(state: state, phase: 1.6, child: GelPanel(padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+              opacity: .5, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const VisualEyebrow('Turn the stone'),
+                GeodeCrystalViewer(fallback: SizedBox(height: 180, child: Center(child: Asset3D.boxed(
+                  asset: Geode3DAsset.crystalFern, width: 160, height: 160,
+                  fallback: Image.asset('assets/images/crystal-fern.png', width: 160, height: 160,
+                    excludeFromSemantics: true))))),
+              ]))),
             const SizedBox(height: 22),
             VisualFloat(state: state, child: GelPanel(padding: const EdgeInsets.all(6), radius: 22,
               child: Row(children: [

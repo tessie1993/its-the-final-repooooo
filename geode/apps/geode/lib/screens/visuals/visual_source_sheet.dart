@@ -3,6 +3,7 @@ import 'package:geode_engine/geode_engine.dart';
 import '../../components/components.dart';
 import '../../state/geode_app_state.dart';
 import '../../theme/geode_theme.dart';
+import '../../three_d/eq_3d.dart';
 import 'visual_widgets.dart';
 
 Future<void> showVisualSourceSheet(BuildContext context, GeodeAppState state) =>
@@ -60,7 +61,8 @@ class _VisualSourceSheetState extends State<_VisualSourceSheet> {
                   Row(children: [const Expanded(child: Text('Live sound', style: TextStyle(fontWeight: FontWeight.w600))),
                     Text(frame.rms > .005 ? 'Listening' : 'Quiet', style: const TextStyle(color: GeodeTokens.accent))]),
                   const SizedBox(height: 18),
-                  _meter('Bass', frame.bass), _meter('Mid', frame.mid), _meter('Treble', frame.treble),
+                  Meters3D(frame: frame, fallback: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [_meter('Bass', frame.bass), _meter('Mid', frame.mid), _meter('Treble', frame.treble)])),
                 ]))),
             ],
             const SizedBox(height: 22),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/music/music_widgets.dart';
 import '../state/geode_app_state.dart';
+import '../three_d/medallion_3d.dart';
 import 'gel_panel.dart';
 
 class MiniPlayer extends StatelessWidget {
@@ -16,7 +17,9 @@ class MiniPlayer extends StatelessWidget {
       return GelPanel(radius: 23, padding: const EdgeInsets.fromLTRB(10, 4, 4, 0),
         opacity: .9, child: Column(mainAxisSize: MainAxisSize.min, children: [
           Row(children: [
-            const MusicArtwork(size: 42, radius: 14),
+            SizedBox.square(dimension: 42, child: Medallion3D(compact: true,
+              music: music, nature: state.scene,
+              fallback: MusicArtwork(size: 42, radius: 14, track: track))),
             const SizedBox(width: 10),
             Expanded(child: Semantics(button: true, label: 'Open now playing',
               child: InkWell(onTap: onOpen, borderRadius: BorderRadius.circular(12),
