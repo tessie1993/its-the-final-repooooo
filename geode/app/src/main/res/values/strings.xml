@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Geode</string>
+    <string name="wallpaper_label">Geode</string>
+    <string name="wallpaper_description">Your last Geode style, reacting to whatever the app is playing and drifting gently when it is not.</string>
+    <string name="dream_label">Geode</string>
+    <string name="notification_listener_label">Geode — now playing in other apps</string>
+    <string name="capture_channel_name">Visualizing other apps</string>
+    <string name="capture_channel_description">Shown while Geode is reading the audio another app is playing.</string>
+    <string name="capture_notification_title">Visualizing other apps</string>
+    <string name="capture_notification_text">Geode is reading the audio playing on this device.</string>
+    <string name="capture_notification_stop">Stop</string>
+    <string name="export_channel_name">Rendering video</string>
+    <string name="export_channel_description">Shown while Geode is rendering a video, so the render is not interrupted.</string>
+    <string name="export_notification_title">Rendering video</string>
+    <string name="export_notification_text">Geode is rendering your visuals.</string>
+
+    <!-- Android Auto browse tree. -->
+    <string name="library_tab_tracks">Tracks</string>
+    <string name="library_tab_albums">Albums</string>
+    <string name="library_tab_artists">Artists</string>
+    <string name="library_tab_playlists">Playlists</string>
+    <string name="widget_label">Geode now playing</string>
+    <string name="widget_description">Artwork, title and transport for what Geode is playing.</string>
+    <string name="widget_nothing_playing">Nothing playing</string>
+    <string name="widget_play">Play</string>
+    <string name="widget_pause">Pause</string>
+    <string name="widget_next">Next track</string>
+    <string name="widget_previous">Previous track</string>
+    <string name="auto_favourites">Favourites</string>
+    <string name="auto_recently_played">Recently played</string>
+
+    <!-- Clip effect labels. -->
+    <string name="studio_brightness">Brightness</string>
+    <string name="studio_contrast">Contrast</string>
+    <string name="studio_saturation">Saturation</string>
+    <string name="studio_hue_shift">Hue shift</string>
+    <string name="studio_speed">Speed</string>
+    <string name="studio_rotate">Rotate</string>
+
+    <!-- Equalizer presets. -->
+    <string name="eq_preset_flat">Flat</string>
+    <string name="eq_preset_bass">Bass</string>
+    <string name="eq_preset_treble">Treble</string>
+    <string name="eq_preset_vocal">Vocal</string>
+    <string name="eq_preset_rock">Rock</string>
+    <string name="eq_preset_electronic">Electronic</string>
+
+    <!-- Export: failure messages. Shared by VideoExporter, StudioExporter and LoopRender. -->
+    <string name="export_error_library_insert">Your Videos library would not accept a new file. Check that storage is not full, or render to a folder you choose instead.</string>
+    <string name="export_error_library_open">The new file in your Videos library could not be opened for writing.</string>
+    <string name="export_error_destination_write">The folder you chose would not let the file be written. Some cloud providers refuse this; try your Videos library or a folder on the device.</string>
+    <string name="export_error_encoder_buffer_null">The video encoder returned an empty buffer (codec error state).</string>
+    <string name="export_error_encoder_no_output">The video encoder produced no output — this device\'s encoder or the chosen format may not be supported.</string>
+    <string name="export_error_encoder_stalled">The video encoder stalled while flushing — the export is incomplete.</string>
+    <string name="export_error_studio_save">The finished file could not be saved to Movies/Geode.</string>
+    <string name="export_error_studio_start">The export could not be started.</string>
+    <string name="export_error_destination_save">The export could not be saved to that folder.</string>
+    <string name="export_error_encoder_unsupported">This device\'s video encoder would not accept that output — try a smaller size or a different aspect ratio.</string>
+    <string name="export_error_decode_unsupported">That clip could not be read — the file may have moved, or be in a format this device cannot decode.</string>
+    <string name="export_error_no_permission">Geode does not have permission to read that file.</string>
+    <string name="export_error_generic">The export failed.</string>
+    <string name="export_error_loop_encoder_rejected">This device\'s video encoder would not accept %1$d×%2$d. Try a smaller size or a different aspect ratio.</string>
+    <string name="export_error_loop_low_gpu_memory">There is not enough graphics memory to hold even one crossfade frame at %1$d×%2$d — render the loop at a smaller size.</string>
+    <string name="export_error_loop_stopped">The loop render stopped unexpectedly.</string>
+    <string name="export_error_loop_cache_write">The loop could not be written to this device\'s cache: %1$s</string>
+    <string name="export_error_loop_shader_compile">The seam blend could not be compiled on this GPU: %1$s</string>
+    <string name="export_error_loop_encoder_busy">The video encoder was busy — close other apps that are recording or playing video and try again.</string>
+    <string name="export_error_loop_encoder_failed">This device\'s video encoder failed while rendering the loop: %1$s</string>
+    <string name="export_error_loop_no_output">The video encoder produced no output for this loop.</string>
+    <string name="export_error_loop_stalled">The video encoder stalled while finishing the loop.</string>
+
+    <!-- Timeline export. -->
+    <string name="editor_export_skipped_kinds">Skipped clips this export can\'t carry: %1$s</string>
+
+</resources>
