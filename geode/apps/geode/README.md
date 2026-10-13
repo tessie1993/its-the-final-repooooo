@@ -1,17 +1,29 @@
-# geode
+# Geode Flutter UI
 
-A new Flutter project.
+Nature-inspired interface with a shared touch-reactive gel field, photographic
+moss/glass components and a raymarched 3D water sculpture. A transparent Flutter Scene GPU pass adds
+faceted quartz, jade and dew with physically based materials.
 
-## Getting Started
+Four destinations: Visuals, Music, Studio and Settings. Includes local audio
+import/playback, queue and playlist management, saved visual presets, a five-lane
+project editor, JSON import/export, and persisted appearance preferences.
 
-This project is a starting point for a Flutter application.
+The shader scene, nature assets and spring-driven components share one scene
+behind every route. Audio position and editor playhead updates stay outside the
+root app rebuild path.
 
-A few resources to get you started if this is your first Flutter project:
+Native music-reactive rendering, MilkDrop, video export and live wallpaper still
+require Flutter host integration. Their C++ source is retained intact and the Flutter Android plugin now
+packages the original CMake engine and native assets. Video render
+is explicitly unavailable; project JSON export is implemented.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+This is an integration checkpoint, not a verified release. Flutter/Dart startup
+in the editing environment aborts with `Failed to retrieve stack bounds` before
+analysis or builds. Dependencies and lockfile must be resolved on a working SDK.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+From the `geode` workspace root, run `flutter pub get`, then from this directory
+run `flutter analyze`, `flutter test`, and `flutter run` with Flutter 3.47.7 /
+Dart 3.13.5. Initialize native dependencies with `git submodule update --init
+--recursive` from the repository root before native build work.
+
+See [the blueprint](../../docs/design/NATURE_UI_BLUEPRINT.md) for scene boundaries.
