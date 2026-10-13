@@ -1,0 +1,14 @@
+name: geode_workspace
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+
+workspace:
+  - apps/geode
+  - packages/geode_native
+  - packages/geode_engine
+  - packages/geode_data
+  - packages/geode_editor
+  - packages/geode_playback
+  - packages/geode_export
