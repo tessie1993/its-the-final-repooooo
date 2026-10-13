@@ -69,7 +69,7 @@ Future<void> trackAction(BuildContext context, GeodeAppState state,
       break;
     case 'remove':
       if (await confirmMusicAction(context, title: 'Remove this track?',
-        message: '“${track.title}” will leave your library, playlists and queue. The original audio file stays on your device.')) {
+        message: '“${track.title}” will leave your library, playlists and queue. The original audio file stays on your device.') && context.mounted) {
         state.music.removeTrack(track.id);
       }
       break;
@@ -96,7 +96,7 @@ Future<void> addTrackToPlaylist(BuildContext context, GeodeAppState state, Music
   String playlistId = selected;
   if (selected == '__new') {
     final name = await musicNameDialog(context, title: 'New playlist', action: 'Create');
-    if (name == null) return;
+    if (name == null || !context.mounted) return;
     playlistId = state.music.createPlaylist(name);
   }
   state.music.addToPlaylist(playlistId, track.id);

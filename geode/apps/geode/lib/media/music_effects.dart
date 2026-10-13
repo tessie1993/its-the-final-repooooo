@@ -12,8 +12,10 @@ extension _MusicEffects on MusicController {
       eqMaxGain = parameters.maxDecibels;
       eqFrequencies = List.unmodifiable(parameters.bands.map((band) => band.centerFrequency));
       for (var i = 0; i < parameters.bands.length && i < _savedEqGains.length; i++) {
+        if (_disposed) return;
         await parameters.bands[i].setGain(_savedEqGains[i].clamp(eqMinGain, eqMaxGain).toDouble());
       }
+      if (_disposed) return;
       await _equalizer!.setEnabled(_savedEqEnabled);
       if (_disposed) return;
       equalizerAvailable = parameters.bands.isNotEmpty;
@@ -49,10 +51,13 @@ extension _MusicEffects on MusicController {
   void _setSleepTimer(Duration? value) => _change(() {
     _sleepTimer?.cancel();
     sleepEndsAt = value == null ? null : DateTime.now().add(value);
-    if (value == null) return;
+    if (value == null || !enableDeviceServices) return;
+    final deadline = sleepEndsAt;
     _sleepTimer = Timer(value.isNegative ? Duration.zero : value, () {
       unawaited(_serial(() async {
+        if (sleepEndsAt != deadline) return;
         await _player.pause();
+        if (_disposed || sleepEndsAt != deadline) return;
         sleepEndsAt = null;
         _changed();
       }));

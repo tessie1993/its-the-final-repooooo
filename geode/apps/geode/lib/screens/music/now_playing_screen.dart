@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../components/components.dart';
+import '../../components/gel_route.dart';
 import '../../media/music_controller.dart';
 import '../../scene/gel_float.dart';
 import '../../state/geode_app_state.dart';
@@ -11,8 +12,7 @@ import 'queue_sheet.dart';
 import 'track_details.dart';
 
 Future<void> showNowPlaying(BuildContext context, GeodeAppState state) =>
-  Navigator.of(context).push<void>(MaterialPageRoute(
-    builder: (_) => NowPlayingScreen(state: state)));
+  showGelRoute<void>(context, NowPlayingScreen(state: state), name: '/music/playing');
 
 class NowPlayingScreen extends StatelessWidget {
   const NowPlayingScreen({super.key, required this.state});
@@ -24,13 +24,13 @@ class NowPlayingScreen extends StatelessWidget {
       final music = state.music;
       final track = music.currentTrack;
       final text = Theme.of(context).textTheme;
+      final compact = MediaQuery.sizeOf(context).width < 340;
       return MusicPage(title: 'Now playing', actions: [
         IconButton(tooltip: 'Audio settings', icon: const Icon(Icons.tune_rounded),
-          onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
-            builder: (_) => AudioSettingsScreen(state: state)))),
+          onPressed: () => showGelRoute<void>(context, AudioSettingsScreen(state: state), name: '/music/audio')),
         IconButton(tooltip: 'Track details', icon: const Icon(Icons.more_horiz_rounded),
           onPressed: track == null ? null : () => showTrackDetails(context, state, track)),
-      ], child: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(24, 20, 24, 36),
+      ], child: SingleChildScrollView(padding: EdgeInsets.fromLTRB(compact ? 12 : 24, 20, compact ? 12 : 24, 36),
         child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 540),
           child: Column(children: [
             MusicErrorBanner(music: music),
@@ -64,7 +64,7 @@ class NowPlayingScreen extends StatelessWidget {
                   onPressed: () => music.setShuffle(!music.shuffle)),
                 GelIconButton(icon: Icons.skip_previous_rounded, tooltip: 'Previous track',
                   onPressed: music.busy || music.loading ? null : music.previous),
-                SizedBox(width: 78, height: 78, child: GelPanel(radius: 39,
+                SizedBox(width: compact ? 64 : 78, height: compact ? 64 : 78, child: GelPanel(radius: 39,
                   padding: EdgeInsets.zero, child: music.busy || music.loading
                     ? const Center(child: SizedBox(width: 27, height: 27, child: CircularProgressIndicator(strokeWidth: 2)))
                     : IconButton(iconSize: 38, tooltip: music.playing ? 'Pause' : 'Play',
@@ -214,7 +214,7 @@ class _SeekBarState extends State<_SeekBar> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text(formatMusicTime(Duration(milliseconds: value.round())),
               style: Theme.of(context).textTheme.bodySmall),
-            Text(formatMusicTime(duration), style: Theme.of(context).textTheme.bodySmall),
+            Text(total > 0 ? formatMusicTime(duration) : '—:—', style: Theme.of(context).textTheme.bodySmall),
           ])),
       ]);
     });

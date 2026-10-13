@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../components/components.dart';
+import '../../components/gel_route.dart';
 import '../../scene/gel_float.dart';
 import '../../state/geode_app_state.dart';
 import '../../theme/geode_theme.dart';
 
 Future<T?> openVisualPage<T>(BuildContext context, Widget child) =>
-  Navigator.of(context).push<T>(PageRouteBuilder<T>(
-    opaque: false,
-    pageBuilder: (_, animation, secondaryAnimation) => child,
-    transitionsBuilder: (_, animation, secondaryAnimation, page) =>
-      FadeTransition(opacity: animation, child: page),
-    transitionDuration: const Duration(milliseconds: 220),
-  ));
+  showGelRoute<T>(context, child);
 
 class VisualPageShell extends StatelessWidget {
   const VisualPageShell({super.key, required this.title, required this.subtitle,
@@ -69,11 +64,22 @@ Future<String?> askLookName(BuildContext context, {String? initialName,
     _LookNameDialog(initialName: initialName, title: title, action: action));
 
 Future<void> saveCurrentLook(BuildContext context, GeodeAppState state) async {
+  final library = state.visualLibrary;
+  if (!library.storageReady) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(library.persistenceError ?? 'Looks are still loading. Please try again.'),
+      action: SnackBarAction(label: 'Retry', onPressed: library.initialize)));
+    return;
+  }
   final name = await askLookName(context);
   if (name == null || !context.mounted) return;
+  final previousId = state.selectedLookId;
   state.saveLook(name);
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Text('“$name” added to your saved looks.')));
+  final saved = state.selectedLookId != previousId;
+  await library.flush();
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+    library.persistenceError ?? (saved ? '“$name” added to your saved looks.' : 'This look could not be saved.'))));
 }
 
 class _LookNameDialog extends StatefulWidget {

@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import 'geode_scene_controller.dart';
+import 'native_nature_layer.dart';
 
 export 'geode_scene_controller.dart';
 export 'gel_float.dart';
@@ -22,12 +23,14 @@ class SceneSurface extends StatefulWidget {
     this.orbAlignment = Alignment.center,
     this.orbScale = 1.0,
     this.interactive = true,
+    this.enableNativeScene = true,
   });
 
   final GeodeSceneController controller;
   final Alignment orbAlignment;
   final double orbScale;
   final bool interactive;
+  final bool enableNativeScene;
 
   @override
   State<SceneSurface> createState() => _SceneSurfaceState();
@@ -173,7 +176,11 @@ class _SceneSurfaceState extends State<SceneSurface>
           ),
         ),
       );
-      if (!widget.interactive) return painting;
+      final layers = Stack(fit: StackFit.expand, children: [
+        painting,
+        if (widget.enableNativeScene) NativeNatureLayer(controller: widget.controller),
+      ]);
+      if (!widget.interactive) return layers;
       return Listener(
         behavior: HitTestBehavior.opaque,
         onPointerDown: (event) {
@@ -186,7 +193,7 @@ class _SceneSurfaceState extends State<SceneSurface>
         onPointerMove: (event) => interact(event.localPosition),
         onPointerUp: (_) => widget.controller.release(),
         onPointerCancel: (_) => widget.controller.release(),
-        child: painting,
+        child: layers,
       );
     });
   }

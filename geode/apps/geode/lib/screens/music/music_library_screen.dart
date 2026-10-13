@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../components/components.dart';
+import '../../components/gel_route.dart';
 import '../../media/music_controller.dart';
 import '../../scene/gel_float.dart';
 import '../../state/geode_app_state.dart';
@@ -172,7 +173,7 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
     _openCollection(name, 'playlist', id);
   }
 
-  void _openCollection(String name, String type, String id) => Navigator.of(context).push(
-    MaterialPageRoute(builder: (_) => MusicCollectionScreen(state: widget.state,
-      title: name, kind: type, collectionId: id)));
+  void _openCollection(String name, String type, String id) => showGelRoute<void>(context,
+    MusicCollectionScreen(state: widget.state, title: name, kind: type, collectionId: id),
+    name: '/music/$type');
 }

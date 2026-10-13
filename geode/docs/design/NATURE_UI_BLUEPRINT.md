@@ -68,7 +68,10 @@ A single decoded environment image feeds transmission and reflection. Particle
 positions are deterministic, with no per-frame random allocation.
 
 This is an artistic damped-wave field and refractive 3D sculpture, **not** a full
-Navier–Stokes gel simulation, a mesh-based world, or a path-traced scene. The
+Navier–Stokes gel simulation, a full world simulation or a path-traced scene. An additional Flutter Scene GPU
+pass provides real faceted quartz, jade and dew geometry with PBR clearcoat,
+transmission and lighting. It uses the shared gel clock and falls back to the
+existing shader if Flutter GPU cannot initialize or render. The
 photographic buttons are raster surfaces with live composited movement; their
 fern geometry is not independently simulated.
 
@@ -107,7 +110,7 @@ but Dart VM startup aborts with `Failed to retrieve stack bounds` before running
 analysis, tests or builds. Device frame rate, shader compatibility, text scaling
 and final rendered layout therefore still require verification on a working SDK.
 
-Static checks completed: all 60 Dart source/test files parse without syntax errors;
+Static checks completed: all 63 Dart source/test files parse without syntax errors;
 all image/shader references resolve; the 32 float uniform slots and one image
 sampler match the Dart renderer; whitespace checks pass. These do not establish
 type correctness, successful shader compilation, visual layout or device performance.

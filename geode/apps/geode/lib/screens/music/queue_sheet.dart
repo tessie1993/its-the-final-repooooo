@@ -27,7 +27,8 @@ class QueueSheet extends StatelessWidget {
           Padding(padding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
             child: Row(children: [
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('In the current', style: Theme.of(context).textTheme.headlineMedium),
+                Text('Queue', maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 6),
                 Text('${music.queue.length} tracks · drag to reorder',
                   style: Theme.of(context).textTheme.bodyMedium),
@@ -55,7 +56,7 @@ class QueueSheet extends StatelessWidget {
                   opacity: current ? .85 : .45,
                   child: Row(children: [
                     ReorderableDragStartListener(index: index,
-                      child: const SizedBox(width: 40, height: 56,
+                      child: const SizedBox(width: 48, height: 56,
                         child: Icon(Icons.drag_indicator, color: GeodeTokens.muted))),
                     Expanded(child: InkWell(borderRadius: BorderRadius.circular(14),
                       onTap: track == null ? null : () => music.playQueueIndex(index),

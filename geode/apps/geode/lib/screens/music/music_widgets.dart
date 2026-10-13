@@ -79,8 +79,8 @@ class MusicPage extends StatelessWidget {
   final List<Widget> actions;
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.transparent, extendBodyBehindAppBar: true,
-    appBar: AppBar(title: Text(title), backgroundColor: const Color(0x99061B22),
+    backgroundColor: Colors.transparent,
+    appBar: AppBar(title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis), backgroundColor: const Color(0x99061B22),
       surfaceTintColor: Colors.transparent, actions: actions),
     body: Stack(fit: StackFit.expand, children: [
       const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
@@ -92,23 +92,40 @@ class MusicPage extends StatelessWidget {
 }
 
 Future<String?> musicNameDialog(BuildContext context, {required String title,
-  String initial = '', String label = 'Name', String action = 'Save'}) async {
-  final controller = TextEditingController(text: initial);
-  final result = await showDialog<String>(context: context, builder: (context) =>
-    AlertDialog(title: Text(title), content: TextField(controller: controller,
+  String initial = '', String label = 'Name', String action = 'Save'}) =>
+  showDialog<String>(context: context, builder: (_) => _MusicNameDialog(
+    title: title, initial: initial, label: label, action: action));
+
+class _MusicNameDialog extends StatefulWidget {
+  const _MusicNameDialog({required this.title, required this.initial,
+    required this.label, required this.action});
+  final String title, initial, label, action;
+  @override
+  State<_MusicNameDialog> createState() => _MusicNameDialogState();
+}
+
+class _MusicNameDialogState extends State<_MusicNameDialog> {
+  late final _controller = TextEditingController(text: widget.initial);
+  @override
+  void dispose() { _controller.dispose(); super.dispose(); }
+  void _save() {
+    final name = _controller.text.trim();
+    if (name.isNotEmpty) Navigator.pop(context, name);
+  }
+  @override
+  Widget build(BuildContext context) => AlertDialog(scrollable: true,
+    title: Text(widget.title), content: TextField(controller: _controller,
       autofocus: true, maxLength: 80, textCapitalization: TextCapitalization.words,
-      decoration: InputDecoration(labelText: label),
-      onSubmitted: (value) { if (value.trim().isNotEmpty) Navigator.pop(context, value.trim()); }),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-        FilledButton(onPressed: () { if (controller.text.trim().isNotEmpty) Navigator.pop(context, controller.text.trim()); },
-          child: Text(action))]));
-  controller.dispose();
-  return result;
+      decoration: InputDecoration(labelText: widget.label),
+      onChanged: (_) => setState(() {}), onSubmitted: (_) => _save()),
+    actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+      FilledButton(onPressed: _controller.text.trim().isEmpty ? null : _save,
+        child: Text(widget.action))]);
 }
 
 Future<bool> confirmMusicAction(BuildContext context, {required String title,
   required String message, String action = 'Remove'}) async =>
-  await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+  await showDialog<bool>(context: context, builder: (context) => AlertDialog(scrollable: true,
     title: Text(title), content: Text(message), actions: [
       TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
       FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(action)),

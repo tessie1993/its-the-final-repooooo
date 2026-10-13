@@ -15,14 +15,15 @@ export 'nature_look.dart';
 class GeodeAppState extends ChangeNotifier {
   GeodeAppState({this.enableDeviceServices = true})
       : music = MusicController(enableDeviceServices: enableDeviceServices),
-        studio = StudioController(enableDeviceServices: enableDeviceServices) {
+        studio = StudioController(enableDeviceServices: enableDeviceServices),
+        visualLibrary = VisualLibrary(enableDeviceServices: enableDeviceServices) {
     visualLibrary.addListener(_libraryChanged);
   }
   final bool enableDeviceServices;
   final scene = GeodeSceneController();
   final MusicController music;
   final StudioController studio;
-  final visualLibrary = VisualLibrary();
+  final VisualLibrary visualLibrary;
   late final _preferences = SharedPreferencesAsync();
   Timer? _saveTimer;
   Future<void>? _initialization;
@@ -57,7 +58,7 @@ class GeodeAppState extends ChangeNotifier {
 
   Future<void> _restore() async {
     if (!enableDeviceServices) {
-      await Future.wait([music.initialize(), studio.initialize()]);
+      await Future.wait([music.initialize(), studio.initialize(), visualLibrary.initialize()]);
       if (_disposed) return;
       initialized = true;
       _changed(persist: false);
@@ -68,7 +69,7 @@ class GeodeAppState extends ChangeNotifier {
     try {
       await Future.wait([visualLibrary.initialize(), music.initialize(), studio.initialize()]);
       if (_disposed) return;
-      if (_storageReady) { await flush(); return; }
+      if (_storageReady) { _queueSave(); await flush(); return; }
       final stored = await _preferences.getString(_key);
       if (_disposed) return;
       if (stored != null) {
@@ -84,7 +85,9 @@ class GeodeAppState extends ChangeNotifier {
         natureDetails = p['natureDetails'] != false;
         haptics = p['haptics'] != false;
         final locks = p['locks'];
-        if (locks is List) parameterLocks.addAll(locks.whereType<String>());
+        parameterLocks.clear();
+        if (locks is List) parameterLocks.addAll(locks.whereType<String>().where(
+          const {'material', 'energy', 'hue', 'particleDensity', 'rippleStrength'}.contains));
       } else {
         _applyLook(selectedLook);
       }
@@ -136,7 +139,7 @@ class GeodeAppState extends ChangeNotifier {
 
   Future<void> flush() async {
     if (_saveTimer != null) { _saveTimer!.cancel(); _queueSave(); }
-    await Future.wait([_writes, studio.flush()]);
+    await Future.wait([_writes, studio.flush(), music.flush(), visualLibrary.flush()]);
   }
 
   void navigate(int index) {

@@ -125,6 +125,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: Theme.of(context).textTheme.bodySmall),
           if (error != null) ...[
             const SizedBox(height: 12), Text(error, style: const TextStyle(color: Color(0xFFF4CBA9), fontSize: 12)),
+            if (!state.visualLibrary.storageReady) Align(alignment: Alignment.centerLeft,
+              child: TextButton(onPressed: state.visualLibrary.loading ? null : state.visualLibrary.initialize,
+                child: const Text('Retry looks'))),
           ],
           if (!state.music.initialized) ...[
             const SizedBox(height: 12), const Text('Music storage is not ready yet.', style: TextStyle(fontSize: 12)),

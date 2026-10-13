@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../components/components.dart';
+import '../../components/gel_route.dart';
 import '../../media/music_controller.dart';
 import '../../state/geode_app_state.dart';
 import 'music_widgets.dart';
 
 Future<void> showTrackDetails(BuildContext context, GeodeAppState state,
-  MusicTrack track) => Navigator.of(context).push<void>(MaterialPageRoute(
-    builder: (_) => TrackDetailsScreen(state: state, track: track)));
+  MusicTrack track) => showGelRoute<void>(context, TrackDetailsScreen(state: state, track: track),
+    name: '/music/track-details');
 
 class TrackDetailsScreen extends StatefulWidget {
   const TrackDetailsScreen({super.key, required this.state, required this.track});

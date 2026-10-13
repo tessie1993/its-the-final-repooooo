@@ -9,6 +9,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'nature_look.dart';
 
 class VisualLibrary extends ChangeNotifier {
+  VisualLibrary({this.enableDeviceServices = true})
+    : _storageReady = !enableDeviceServices,
+      _initialized = !enableDeviceServices;
+
+  final bool enableDeviceServices;
   static const storageKey = 'geode.ui.looks.v1';
   static const _seed = [
     NatureLook(id: 'forest-glass', name: 'Forest glass',
@@ -24,6 +29,12 @@ class VisualLibrary extends ChangeNotifier {
   SharedPreferences? _preferences;
   Future<void> _pendingWrite = Future<void>.value();
   bool _disposed = false;
+  bool _initialized;
+  bool _storageReady;
+  Future<void>? _initialization;
+  bool get initialized => _initialized;
+  bool get storageReady => _storageReady;
+  bool get loading => _initialization != null;
   String? persistenceError;
 
   List<NatureLook> get looks => List.unmodifiable(_looks);
@@ -32,47 +43,95 @@ class VisualLibrary extends ChangeNotifier {
   NatureLook get selectedLook => _looks.firstWhere(
     (look) => look.id == _selectedLookId, orElse: () => _looks.first);
 
-  Future<void> initialize() async {
-    try {
-      _preferences = await SharedPreferences.getInstance();
-      final saved = _preferences!.getString(storageKey);
-      if (saved != null) {
-        final data = _decode(saved);
-        final userLooks = (data['looks'] as List).map((value) =>
-          NatureLook.fromJson(Map<String, dynamic>.from(value as Map)))
-          .where((look) => look.saved && !_seed.any((seed) => seed.id == look.id));
-        _looks.addAll({for (final look in userLooks) look.id: look}.values);
-        _favorites
-          ..clear()
-          ..addAll((data['favorites'] as List? ?? const []).whereType<String>()
-            .where((id) => _looks.any((look) => look.id == id)));
-        final selected = data['selectedLookId'];
-        if (selected is String && _looks.any((look) => look.id == selected)) {
-          _selectedLookId = selected;
-        }
-      }
-    } catch (_) {
-      persistenceError = 'Saved looks could not be loaded. Your nature studies are still available.';
-    }
-    if (!_disposed) notifyListeners();
+  Future<void> initialize() {
+    if (_disposed || _storageReady) return Future<void>.value();
+    return _initialization ??= _load();
   }
 
+  Future<void> _load() async {
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      if (_disposed) return;
+      await preferences.reload();
+      if (_disposed) return;
+      final saved = preferences.getString(storageKey);
+      final restored = <NatureLook>[..._seed];
+      final restoredFavorites = <String>{'forest-glass'};
+      var selected = 'forest-glass';
+      if (saved != null) {
+        final data = _decode(saved);
+        final entries = (data['looks'] as List).map((value) {
+          if (value is! Map) throw const FormatException('Invalid saved look.');
+          return NatureLook.fromJson(Map<String, dynamic>.from(value));
+        }).toList();
+        if (entries.map((look) => look.id).toSet().length != entries.length) {
+          throw const FormatException('Saved looks contain duplicate IDs.');
+        }
+        restored.addAll(entries.where((look) => look.saved &&
+          !_seed.any((seed) => seed.id == look.id)));
+        final favoriteIds = data['favorites'] ?? const <String>[];
+        if (favoriteIds is! List || favoriteIds.any((id) => id is! String)) {
+          throw const FormatException('Invalid saved favorites.');
+        }
+        restoredFavorites
+          ..clear()
+          ..addAll(favoriteIds.cast<String>().where((id) => restored.any((look) => look.id == id)));
+        final storedSelection = data['selectedLookId'];
+        if (storedSelection is String && restored.any((look) => look.id == storedSelection)) {
+          selected = storedSelection;
+        }
+      }
+      // Publish a fully validated snapshot once. A failed load never replaces
+      // either the existing collection or the raw saved data.
+      if (_disposed) return;
+      _looks..clear()..addAll(restored);
+      _favorites..clear()..addAll(restoredFavorites);
+      _selectedLookId = selected;
+      _preferences = preferences;
+      _storageReady = true;
+      persistenceError = null;
+    } catch (_) {
+      if (!_disposed) {
+        _preferences = null;
+        _storageReady = false;
+        persistenceError = 'Saved looks could not be loaded. Retry loading before changing the collection. Existing saved data has not been changed.';
+      }
+    } finally {
+      _initialization = null;
+      if (!_disposed) { _initialized = true; notifyListeners(); }
+    }
+  }
+
+  bool _canEdit() {
+    if (_disposed) return false;
+    if (_storageReady) return true;
+    persistenceError ??= 'Look storage is not ready. Retry loading before saving changes.';
+    notifyListeners();
+    return false;
+  }
+
+  Future<void> flush() => _pendingWrite;
+
   void select(String id) {
+    if (!_canEdit()) return;
     if (!_looks.any((look) => look.id == id)) return;
     _selectedLookId = id;
     _changed();
   }
 
   void toggleFavorite(String id) {
+    if (!_canEdit()) return;
     if (!_looks.any((look) => look.id == id)) return;
     if (!_favorites.add(id)) _favorites.remove(id);
     _changed();
   }
 
   void save(NatureLook look) {
+    if (!_canEdit()) return;
     // Built-in nature studies remain a stable starting point.
     if (_seed.any((seed) => seed.id == look.id)) return;
     final index = _looks.indexWhere((item) => item.id == look.id);
+    if (index < 0 && !_canAdd(1)) return;
     final saved = look.copyWith(saved: true);
     if (index < 0) { _looks.add(saved); } else { _looks[index] = saved; }
     _selectedLookId = look.id;
@@ -81,6 +140,7 @@ class VisualLibrary extends ChangeNotifier {
   }
 
   void rename(String id, String name) {
+    if (!_canEdit()) return;
     final index = _looks.indexWhere((look) => look.id == id && look.saved);
     final clean = name.trim();
     if (index < 0 || clean.isEmpty || clean.length > 64) return;
@@ -89,8 +149,10 @@ class VisualLibrary extends ChangeNotifier {
   }
 
   NatureLook? duplicate(String id) {
+    if (!_canEdit()) return null;
     final index = _looks.indexWhere((look) => look.id == id);
     if (index < 0) return null;
+    if (!_canAdd(1)) return null;
     final original = _looks[index];
     final copy = original.copyWith(id: _newId(),
       name: '${original.name.length > 55 ? original.name.substring(0, 55) : original.name} · copy',
@@ -100,12 +162,20 @@ class VisualLibrary extends ChangeNotifier {
   }
 
   void delete(String id) {
+    if (!_canEdit()) return;
     _looks.removeWhere((look) => look.id == id && look.saved);
     if (!_looks.any((look) => look.id == id)) _favorites.remove(id);
     if (!_looks.any((look) => look.id == _selectedLookId)) {
       _selectedLookId = _looks.first.id;
     }
     _changed();
+  }
+
+  bool _canAdd(int count) {
+    if (_looks.length + count <= 500) return true;
+    persistenceError = 'Your collection can hold 500 looks. Export or delete some looks before adding more.';
+    if (!_disposed) notifyListeners();
+    return false;
   }
 
   String _newId() => 'saved-${DateTime.now().microsecondsSinceEpoch}-${_looks.length}';
@@ -128,12 +198,14 @@ class VisualLibrary extends ChangeNotifier {
   }
 
   int importJson(String source) {
+    if (!_canEdit()) throw StateError('Look storage is not ready. Retry loading first.');
     final data = _decode(source);
     // Validate the entire file before changing the collection.
     final imported = (data['looks'] as List).map((value) {
       if (value is! Map) throw const FormatException('Invalid look in collection.');
       return NatureLook.fromJson(Map<String, dynamic>.from(value));
     }).toList();
+    if (!_canAdd(imported.length)) throw FormatException(persistenceError!);
     for (final look in imported) {
       _looks.add(look.copyWith(id: _newId(), saved: true));
     }
@@ -142,39 +214,48 @@ class VisualLibrary extends ChangeNotifier {
   }
 
   Future<bool> exportLooks() async {
+    if (_disposed || !enableDeviceServices || !_storageReady) return false;
     final result = await FilePicker.saveFile(
       dialogTitle: 'Export Geode looks', fileName: 'geode-looks.json', mimeType: 'application/json',
       type: FileType.custom, allowedExtensions: ['json'],
       bytes: Uint8List.fromList(utf8.encode(exportJson())));
-    return result != null;
+    return !_disposed && result != null;
   }
 
   /// Returns -1 for cancellation, otherwise the number of imported looks.
   Future<int> importLooks() async {
+    if (_disposed || !enableDeviceServices) return -1;
+    if (!_canEdit()) throw StateError('Look storage is not ready. Retry loading first.');
     final file = await FilePicker.pickFile(
       dialogTitle: 'Import Geode looks', type: FileType.custom,
       allowedExtensions: ['json']);
-    if (file == null) return -1;
+    if (_disposed || file == null) return -1;
     final length = await file.length();
+    if (_disposed) return -1;
     if (length != null && length > 2 * 1024 * 1024) {
       throw const FormatException('Choose a look collection smaller than 2 MB.');
     }
     final builder = BytesBuilder(copy: false);
     await for (final chunk in file.readAsByteStream()) {
+      if (_disposed) return -1;
       if (builder.length + chunk.length > 2 * 1024 * 1024) {
         throw const FormatException('Choose a look collection smaller than 2 MB.');
       }
       builder.add(chunk);
     }
+    if (_disposed) return -1;
     return importJson(utf8.decode(builder.takeBytes()));
   }
 
   void _changed() {
-    if (!_disposed) notifyListeners();
+    if (_disposed) return;
+    notifyListeners();
+    if (!enableDeviceServices || !_storageReady) return;
     final serialized = exportJson();
     _pendingWrite = _pendingWrite.then((_) async {
       try {
-        _preferences ??= await SharedPreferences.getInstance();
+        // Already-authorized writes finish after disposal, while notification
+        // callbacks are guarded. flush() exposes their completion to callers.
         final written = await _preferences!.setString(storageKey, serialized);
         if (!written) throw StateError('Save failed');
         if (persistenceError != null) {

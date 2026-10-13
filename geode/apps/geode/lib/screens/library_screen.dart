@@ -80,6 +80,9 @@ class _PresetLibraryScreenState extends State<PresetLibraryScreen> {
                 const SizedBox(height: 12),
                 Text(state.visualLibrary.persistenceError ?? 'Saved looks and favorites stay on this device. Export a collection to keep a copy.',
                   textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+                if (!state.visualLibrary.storageReady) TextButton.icon(
+                  onPressed: state.visualLibrary.loading ? null : state.visualLibrary.initialize,
+                  icon: const Icon(Icons.refresh_rounded), label: const Text('Retry loading looks')),
               ],
             ]))),
         ));

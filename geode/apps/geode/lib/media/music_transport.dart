@@ -33,6 +33,9 @@ extension _MusicTransport on MusicController {
 
   Future<void> _loadCurrent({required bool autoplay}) async {
     _sourceGeneration++;
+    _loadedTrackId = null;
+    loopStart = null;
+    loopEnd = null;
     final track = currentTrack;
     if (track == null) {
       await _player.stop();
@@ -45,9 +48,8 @@ extension _MusicTransport on MusicController {
     loading = true;
     error = null;
     _loadingSource = true;
-    _loadedTrackId = null;
-    loopStart = null;
-    loopEnd = null;
+    duration = Duration(milliseconds: track.durationMs);
+    position.value = Duration(milliseconds: math.max(0, _resumePositionMs));
     _notify();
     try {
       // Pause before replacing the source so a previous play request cannot
@@ -68,6 +70,7 @@ extension _MusicTransport on MusicController {
       if (_disposed) return;
       _loadedTrackId = track.id;
       _loadingSource = false;
+      position.value = _player.position;
       if (loadedDuration != null) _acceptDuration(loadedDuration);
       else duration = Duration(milliseconds: track.durationMs);
       _recentIds..remove(track.id)..insert(0, track.id);

@@ -56,7 +56,7 @@ class MusicController extends ChangeNotifier {
       }
     }));
     _subscriptions.add(_player.positionStream.listen((value) {
-      if (_disposed) return;
+      if (_disposed || _loadedTrackId == null || _loadingSource) return;
       position.value = value;
       final start = loopStart;
       final end = loopEnd;
@@ -137,6 +137,12 @@ class MusicController extends ChangeNotifier {
     }
     return _initialization ??= _initialize().whenComplete(() => _initialization = null);
   }
+  Future<void> flush() async {
+    if (!initialized || _disposed || !enableDeviceServices) return;
+    _saveTimer?.cancel();
+    _writeSnapshot();
+    await _saveSerial;
+  }
   Future<void> importAudio() => _importAudio();
   Future<void> playTrack(MusicTrack track, {List<MusicTrack>? from}) =>
       _playTrack(track, from: from);
@@ -212,11 +218,13 @@ class MusicController extends ChangeNotifier {
     _changed();
   }
   Future<void> _serial(Future<void> Function() action) {
-    final result = _transportSerial.then((_) async {
+    final result = _transportSerial.catchError((Object _) {}).then((_) async {
       if (_disposed) return;
-      await initialize();
-      if (!initialized || _disposed || !enableDeviceServices) return;
-      try { await action(); }
+      try {
+        await initialize();
+        if (!initialized || _disposed || !enableDeviceServices) return;
+        await action();
+      }
       catch (_) {
         if (!_disposed) {
           error = 'Could not complete playback. Check the audio file and retry.';

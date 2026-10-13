@@ -1,7 +1,8 @@
 # Geode Flutter UI
 
 Nature-inspired interface with a shared touch-reactive gel field, photographic
-moss/glass components and a raymarched 3D water sculpture.
+moss/glass components and a raymarched 3D water sculpture. A transparent Flutter Scene GPU pass adds
+faceted quartz, jade and dew with physically based materials.
 
 Four destinations: Visuals, Music, Studio and Settings. Includes local audio
 import/playback, queue and playlist management, saved visual presets, a five-lane
@@ -12,7 +13,8 @@ behind every route. Audio position and editor playhead updates stay outside the
 root app rebuild path.
 
 Native music-reactive rendering, MilkDrop, video export and live wallpaper still
-require Flutter host integration. Their native source is retained. Video render
+require Flutter host integration. Their C++ source is retained intact and the Flutter Android plugin now
+packages the original CMake engine and native assets. Video render
 is explicitly unavailable; project JSON export is implemented.
 
 This is an integration checkpoint, not a verified release. Flutter/Dart startup

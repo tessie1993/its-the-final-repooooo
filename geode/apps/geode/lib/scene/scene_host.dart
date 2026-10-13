@@ -39,6 +39,7 @@ class _SceneHostState extends State<SceneHost> {
         onPointerCancel: (event) => _release(event.pointer),
         child: Stack(fit: StackFit.expand, children: [
           SceneSurface(controller: state.scene, interactive: false,
+            enableNativeScene: state.enableDeviceServices,
             orbAlignment: state.immersive ? Alignment.center
               : (wide ? const Alignment(-.40, -.08) : const Alignment(0, -.15)),
             orbScale: wide ? .8 : .96),

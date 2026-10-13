@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../components/components.dart';
 import '../../media/music_controller.dart';
@@ -53,14 +54,15 @@ class _MusicCollectionScreenState extends State<MusicCollectionScreen> {
                 MusicErrorBanner(music: music),
                 Wrap(spacing: 12, runSpacing: 12, children: [
                   GelButton(label: 'Play all', icon: Icons.play_arrow_rounded,
-                    onPressed: tracks.isEmpty || music.busy ? null : () async {
+                    onPressed: tracks.isEmpty || music.busy || music.loading ? null : () async {
+                      music.setShuffle(false);
                       await music.playTrack(tracks.first, from: tracks);
                       if (context.mounted) showNowPlaying(context, widget.state);
                     }),
                   GelButton(label: 'Shuffle', primary: false, icon: Icons.shuffle_rounded,
-                    onPressed: tracks.isEmpty || music.busy ? null : () async {
+                    onPressed: tracks.isEmpty || music.busy || music.loading ? null : () async {
                       music.setShuffle(true);
-                      await music.playTrack(tracks.first, from: tracks);
+                      await music.playTrack(tracks[math.Random().nextInt(tracks.length)], from: tracks);
                       if (context.mounted) showNowPlaying(context, widget.state);
                     }),
                   if (isPlaylist) GelButton(label: 'Add tracks', primary: false,
@@ -110,12 +112,12 @@ class _MusicCollectionScreenState extends State<MusicCollectionScreen> {
     switch (action) {
       case 'rename':
         final renamed = await musicNameDialog(context, title: 'Rename playlist', initial: name);
-        if (renamed != null) widget.state.music.renamePlaylist(widget.collectionId, renamed);
+        if (renamed != null && mounted) widget.state.music.renamePlaylist(widget.collectionId, renamed);
         break;
       case 'reorder': setState(() => _reordering = !_reordering); break;
       case 'delete':
         if (await confirmMusicAction(context, title: 'Delete playlist?',
-          message: '“$name” will be removed. Your tracks stay in the music library.', action: 'Delete')) {
+          message: '“$name” will be removed. Your tracks stay in the music library.', action: 'Delete') && mounted) {
           widget.state.music.deletePlaylist(widget.collectionId);
           if (mounted) Navigator.pop(context);
         }

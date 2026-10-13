@@ -16,28 +16,12 @@ class LyricsSheet extends StatelessWidget {
   Future<void> _edit(BuildContext context) async {
     final track = state.music.currentTrack;
     if (track == null) return;
-    final input = TextEditingController(text: track.lyrics);
-    final result = await showDialog<String>(context: context, builder: (context) =>
-      AlertDialog(scrollable: true, title: const Text('Your lyrics'),
-        content: SizedBox(width: 520, child: Column(mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Paste plain lyrics or timed LRC text, such as [00:12.50] First line.'),
-            const SizedBox(height: 16),
-            TextField(controller: input, minLines: 5, maxLines: 12,
-              keyboardType: TextInputType.multiline,
-              decoration: const InputDecoration(labelText: 'Lyrics', alignLabelWithHint: true,
-                border: OutlineInputBorder())),
-          ])),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, input.text.trim()),
-            child: const Text('Save lyrics'))]));
-    if (result != null) {
+    final result = await showDialog<String>(context: context,
+      builder: (_) => _LyricsEditorDialog(initial: track.lyrics));
+    if (result != null && context.mounted) {
       final latest = state.music.tracks.firstWhere((item) => item.id == track.id, orElse: () => track);
       state.music.updateTrack(latest.copyWith(lyrics: result));
     }
-    // Let the closing route finish using the field before disposing its controller.
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    input.dispose();
   }
 
   @override
@@ -51,7 +35,8 @@ class LyricsSheet extends StatelessWidget {
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(padding: const EdgeInsets.fromLTRB(24, 4, 16, 16), child: Row(children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Words in the water', style: Theme.of(context).textTheme.headlineMedium),
+            Text('Lyrics', maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(track?.title ?? 'Nothing playing', maxLines: 1, overflow: TextOverflow.ellipsis),
           ])),
@@ -142,4 +127,32 @@ List<_LyricLine> _parseLyrics(String lyrics) {
     result.sort((a, b) => a.time!.compareTo(b.time!));
   }
   return result;
+}
+
+class _LyricsEditorDialog extends StatefulWidget {
+  const _LyricsEditorDialog({required this.initial});
+  final String initial;
+  @override
+  State<_LyricsEditorDialog> createState() => _LyricsEditorDialogState();
+}
+
+class _LyricsEditorDialogState extends State<_LyricsEditorDialog> {
+  late final _input = TextEditingController(text: widget.initial);
+  @override
+  void dispose() { _input.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => AlertDialog(scrollable: true,
+    title: const Text('Your lyrics'),
+    content: SizedBox(width: 520, child: Column(mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Paste plain lyrics or timed LRC text, such as [00:12.50] First line.'),
+        const SizedBox(height: 16),
+        TextField(controller: _input, minLines: 5, maxLines: 12,
+          keyboardType: TextInputType.multiline,
+          decoration: const InputDecoration(labelText: 'Lyrics', alignLabelWithHint: true,
+            border: OutlineInputBorder())),
+      ])),
+    actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+      FilledButton(onPressed: () => Navigator.pop(context, _input.text.trim()),
+        child: const Text('Save lyrics'))]);
 }

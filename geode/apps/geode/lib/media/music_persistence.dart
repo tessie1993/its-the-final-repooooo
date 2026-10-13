@@ -7,9 +7,11 @@ extension _MusicPersistence on MusicController {
     loading = true;
     error = null;
     _notify();
+    var stage = 'storage';
     try {
       final source = await _preferences.getString(_musicStorageKey);
       if (_disposed) return;
+      stage = 'catalogue';
       // Decode completely before changing live state. A malformed snapshot is
       // kept intact; retrying never overwrites it with an empty catalogue.
       final data = source == null ? <String, dynamic>{}
@@ -34,6 +36,7 @@ extension _MusicPersistence on MusicController {
       final storedEqEnabled = data['equalizerEnabled'] as bool? ?? false;
       final storedEqGains = (data['eqGains'] as List<dynamic>? ?? []).map((value) => (value as num).toDouble()).toList();
       final storedSleep = (data['sleepEndsAt'] as num?)?.toInt();
+      stage = 'audio';
       _ensurePlayer();
       await _player.setVolume(storedVolume);
       if (_disposed) return;
@@ -67,7 +70,13 @@ extension _MusicPersistence on MusicController {
         if (remaining > Duration.zero) _setSleepTimer(remaining);
       }
     } catch (_) {
-      error = 'Your saved music library could not be loaded. Retry to recover it; saved data has been kept.';
+      if (!_disposed) {
+        error = switch (stage) {
+          'storage' => 'Music storage is unavailable. Retry after restarting the app. Saved data has been kept.',
+          'audio' => 'Audio services could not start. Retry after restarting the app. Your saved library has been kept.',
+          _ => 'Your saved music library could not be loaded. Retry to recover it; saved data has been kept.',
+        };
+      }
     } finally {
       loading = false;
       _notify();

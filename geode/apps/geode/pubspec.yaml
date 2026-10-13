@@ -5,13 +5,15 @@ publish_to: none
 
 environment:
   sdk: ^3.13.5
-  flutter: ">=3.47.0"
+  flutter: ">=3.47.1"
 
 resolution: workspace
 
 dependencies:
   flutter:
     sdk: flutter
+  flutter_scene: ^0.24.3
+  vector_math: ^2.4.3
   file_picker: ^13.1.0
   just_audio: ^0.10.6
   shared_preferences: ^2.5.6
