@@ -68,7 +68,8 @@ build reproducible. Check them in phase 0.
 | 3 | [03-kotlin-replacement-map.md](03-kotlin-replacement-map.md) | Every one of the 290 Kotlin files: what it did, and whether it becomes **Dart/Flutter**, **C++**, a **platform shim** or is **dropped** |
 | 4 | [04-shaders-and-assets.md](04-shaders-and-assets.md) | Every shader and asset group, and how Flutter packages them |
 | 5 | [05-target-architecture.md](05-target-architecture.md) | The new layered design: C ABI → Dart FFI → state → Flutter UI; the new C++ modules to write; folder layout; build |
-| 6 | [06-migration-plan.md](06-migration-plan.md) | Phased, dependency-ordered plan with exit criteria, plus decisions that need you |
+| 6 | [06-migration-plan.md](06-migration-plan.md) | Full-parity migration plan (superseded for scope by doc 7) |
+| 7 | [07-rebuild-plan.md](07-rebuild-plan.md) | **The current plan**: player + C++ visualizer + export studio, what we keep, rebuild or defer, milestones |
 
 ## How Graphify was used
 
