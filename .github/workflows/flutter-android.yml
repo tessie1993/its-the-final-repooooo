@@ -1,0 +1,123 @@
+name: Flutter Android APK
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'geode/**'
+      - '.gitmodules'
+      - '.github/workflows/flutter-android.yml'
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - 'geode/**'
+      - '.gitmodules'
+      - '.github/workflows/flutter-android.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-android-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.47.6'
+
+jobs:
+  flutter-checks:
+    name: Dart analysis and Flutter tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: geode
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Download pub.dev libraries
+        run: flutter pub get
+      - name: Save resolved dependency lock
+        uses: actions/upload-artifact@v4
+        with:
+          name: geode-pubspec-lock-${{ github.run_number }}
+          path: geode/pubspec.lock
+          if-no-files-found: error
+          retention-days: 7
+      - name: Analyze Flutter app and packages
+        run: flutter analyze --no-pub
+      - name: Run application and package tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in apps/geode packages/*; do
+            if [ -d "$package/test" ]; then
+              (cd "$package" && flutter test --no-pub --reporter expanded)
+            fi
+          done
+
+  debug-apk:
+    name: Compile native engine and debug APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: geode/apps/geode
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install Android SDK, NDK and CMake
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:?Android SDK missing}}"
+          sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$sdkmanager" --licenses >/dev/null || true
+          "$sdkmanager" 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.0.13004108' 'cmake;3.22.1'
+      - name: Download pub.dev libraries
+        run: flutter pub get
+      - name: Build debug APK with C++ audio, analysis and visuals
+        run: flutter build apk --debug --no-pub --target-platform android-arm64,android-x64
+      - name: Check native libraries and package checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=build/app/outputs/flutter-apk/app-debug.apk
+          for abi in arm64-v8a x86_64; do
+            unzip -l "$apk" "lib/$abi/libgeode.so" | grep "lib/$abi/libgeode.so"
+          done
+          sha256sum "$apk" > "$apk.sha256"
+      - name: Upload installable debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: geode-debug-${{ github.run_number }}
+          path: |
+            geode/apps/geode/build/app/outputs/flutter-apk/app-debug.apk
+            geode/apps/geode/build/app/outputs/flutter-apk/app-debug.apk.sha256
+          if-no-files-found: error
+          retention-days: 7
+      - name: Android lint
+        run: cd android && ./gradlew :app:lintDebug --stacktrace --no-daemon
+      - name: Upload build and lint reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geode-build-reports-${{ github.run_number }}
+          path: geode/apps/geode/build/**/reports/
+          if-no-files-found: ignore
+          retention-days: 7
