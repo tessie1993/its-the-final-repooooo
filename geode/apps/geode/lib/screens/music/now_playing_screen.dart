@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../components/components.dart';
+import '../../components/player_orb.dart';
 import '../../components/gel_route.dart';
 import '../../media/music_controller.dart';
 import '../../scene/gel_float.dart';
@@ -26,9 +27,9 @@ class NowPlayingScreen extends StatelessWidget {
       final text = Theme.of(context).textTheme;
       final compact = MediaQuery.sizeOf(context).width < 340;
       return MusicPage(title: 'Now playing', actions: [
-        IconButton(tooltip: 'Audio settings', icon: const Icon(Icons.tune_rounded),
+        GelIconButton(tooltip: 'Audio settings', icon: Icons.tune_rounded,
           onPressed: () => showGelRoute<void>(context, AudioSettingsScreen(state: state), name: '/music/audio')),
-        IconButton(tooltip: 'Track details', icon: const Icon(Icons.more_horiz_rounded),
+        GelIconButton(tooltip: 'Track details', icon: Icons.more_horiz_rounded,
           onPressed: track == null ? null : () => showTrackDetails(context, state, track)),
       ], child: SingleChildScrollView(padding: EdgeInsets.fromLTRB(compact ? 12 : 24, 20, compact ? 12 : 24, 36),
         child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 540),
@@ -41,10 +42,12 @@ class NowPlayingScreen extends StatelessWidget {
               Text('YOUR MUSIC, NATURALLY', style: text.labelSmall),
               const SizedBox(height: 25),
               GelFloat(controller: state.scene, anchor: const Offset(.5, .4), weight: 2.4,
-                child: _NatureRecord(playing: music.playing,
-                  reducedMotion: state.scene.effectiveReducedMotion)),
+                child: PlayerOrb(controller: state.scene, playing: music.playing,
+                  enableNativeScene: state.enableDeviceServices)),
               const SizedBox(height: 30),
               Row(children: [
+                MusicArtwork(size: 62, radius: 20, track: track),
+                const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(track.title, style: text.headlineMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 8),
@@ -65,7 +68,7 @@ class NowPlayingScreen extends StatelessWidget {
                 GelIconButton(icon: Icons.skip_previous_rounded, tooltip: 'Previous track',
                   onPressed: music.busy || music.loading ? null : music.previous),
                 SizedBox(width: compact ? 64 : 78, height: compact ? 64 : 78, child: GelPanel(radius: 39,
-                  padding: EdgeInsets.zero, child: music.busy || music.loading
+                  padding: EdgeInsets.zero, highlighted: true, pearl: true, child: music.busy || music.loading
                     ? const Center(child: SizedBox(width: 27, height: 27, child: CircularProgressIndicator(strokeWidth: 2)))
                     : IconButton(iconSize: 38, tooltip: music.playing ? 'Pause' : 'Play',
                         onPressed: music.togglePlay,
@@ -87,12 +90,13 @@ class NowPlayingScreen extends StatelessWidget {
                   onPressed: () => _showTools(context)),
               ]),
               const SizedBox(height: 22),
-              if (music.loopStart != null || music.sleepEndsAt != null) GelPanel(
+              if (music.loopStart != null || music.sleepEndsAt != null || music.sleepAtTrackEnd) GelPanel(
                 padding: const EdgeInsets.all(16), child: Column(children: [
                   if (music.loopStart != null) Text('Loop from ${formatMusicTime(music.loopStart!)}'
                     '${music.loopEnd == null ? ' · choose an end point' : ' to ${formatMusicTime(music.loopEnd!)}'}'),
                   if (music.sleepEndsAt != null) Text('Sleep timer ends at '
                     '${TimeOfDay.fromDateTime(music.sleepEndsAt!).format(context)}'),
+                  if (music.sleepAtTrackEnd) const Text('Music will stop after this track.'),
                 ])),
             ],
           ]),
@@ -137,6 +141,8 @@ class NowPlayingScreen extends StatelessWidget {
                 music.setSleepTimer(Duration(minutes: minutes))),
             if (music.sleepEndsAt != null) ActionChip(label: const Text('Cancel timer'),
               onPressed: () => music.setSleepTimer(null)),
+            FilterChip(label: const Text('End of this track'), selected: music.sleepAtTrackEnd,
+              onSelected: music.setSleepAtTrackEnd),
           ]),
           const SizedBox(height: 20),
           Align(alignment: Alignment.centerRight, child: TextButton(
@@ -154,46 +160,6 @@ class _SeekBar extends StatefulWidget {
   State<_SeekBar> createState() => _SeekBarState();
 }
 
-class _NatureRecord extends StatefulWidget {
-  const _NatureRecord({required this.playing, required this.reducedMotion});
-  final bool playing, reducedMotion;
-  @override
-  State<_NatureRecord> createState() => _NatureRecordState();
-}
-
-class _NatureRecordState extends State<_NatureRecord> with SingleTickerProviderStateMixin {
-  late final AnimationController _rotation = AnimationController(vsync: this,
-    duration: const Duration(seconds: 36));
-  void _sync() {
-    final animate = widget.playing && !widget.reducedMotion && !MediaQuery.disableAnimationsOf(context);
-    if (animate && !_rotation.isAnimating) { _rotation.repeat(); }
-    if (!animate) { _rotation.stop(); }
-  }
-  @override
-  void didChangeDependencies() { super.didChangeDependencies(); _sync(); }
-  @override
-  void didUpdateWidget(_NatureRecord oldWidget) { super.didUpdateWidget(oldWidget); _sync(); }
-  @override
-  void dispose() { _rotation.dispose(); super.dispose(); }
-  @override
-  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) {
-    final size = constraints.maxWidth.clamp(0.0, 310.0).toDouble();
-    return Semantics(image: true, label: 'A moss-covered jade record floating in water',
-      child: SizedBox(width: size, height: size, child: Stack(alignment: Alignment.center, children: [
-        Container(width: size * .83, height: size * .83,
-          decoration: const BoxDecoration(shape: BoxShape.circle, boxShadow: [
-            BoxShadow(color: Color(0x65001013), blurRadius: 36, spreadRadius: 10, offset: Offset(0, 28)),
-            BoxShadow(color: Color(0x3866A791), blurRadius: 42, spreadRadius: 5),
-          ])),
-        Transform(alignment: Alignment.center,
-          transform: Matrix4.identity()..setEntry(3, 2, .0012)..rotateX(-.10)..rotateY(.08),
-          child: RotationTransition(turns: _rotation,
-            child: RepaintBoundary(child: Image.asset('assets/images/stone-dial.png',
-              width: size, height: size, fit: BoxFit.contain, excludeFromSemantics: true)))),
-      ])));
-  });
-}
-
 class _SeekBarState extends State<_SeekBar> {
   double? _drag;
   @override
@@ -203,13 +169,14 @@ class _SeekBarState extends State<_SeekBar> {
       final total = duration.inMilliseconds.toDouble();
       final value = (_drag ?? position.inMilliseconds.toDouble()).clamp(0.0, total > 0 ? total : 1.0).toDouble();
       return Column(children: [
-        Semantics(label: 'Playback position', child: Slider(min: 0, max: total > 0 ? total : 1,
+        GelPanel(radius: 28, padding: EdgeInsets.zero, opacity: .4, blur: 5,
+          child: Semantics(label: 'Playback position', child: Slider(min: 0, max: total > 0 ? total : 1,
           value: value, label: formatMusicTime(Duration(milliseconds: value.round())),
           onChanged: total <= 0 ? null : (value) => setState(() => _drag = value),
           onChangeEnd: (value) {
             widget.music.seek(Duration(milliseconds: value.round()));
             setState(() => _drag = null);
-          })),
+          }))),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text(formatMusicTime(Duration(milliseconds: value.round())),

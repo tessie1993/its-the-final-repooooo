@@ -10,6 +10,11 @@ class MusicTrack {
     required this.addedAt,
     this.sizeBytes = 0,
     this.lyrics = '',
+    this.artPath = '',
+    this.trackGainDb,
+    this.trackPeak,
+    this.albumGainDb,
+    this.albumPeak,
   });
 
   final String id;
@@ -21,6 +26,8 @@ class MusicTrack {
   final int addedAt;
   final int sizeBytes;
   final String lyrics;
+  final String artPath;
+  final double? trackGainDb, trackPeak, albumGainDb, albumPeak;
 
   MusicTrack copyWith({
     String? title,
@@ -38,12 +45,17 @@ class MusicTrack {
     addedAt: addedAt,
     sizeBytes: sizeBytes,
     lyrics: lyrics ?? this.lyrics,
+    artPath: artPath,
+    trackGainDb: trackGainDb, trackPeak: trackPeak,
+    albumGainDb: albumGainDb, albumPeak: albumPeak,
   );
 
-  Map<String, Object> toJson() => {
+  Map<String, Object?> toJson() => {
     'id': id, 'path': path, 'title': title, 'artist': artist,
     'album': album, 'durationMs': durationMs, 'addedAt': addedAt,
     'sizeBytes': sizeBytes, 'lyrics': lyrics,
+    'artPath': artPath, 'trackGainDb': trackGainDb, 'trackPeak': trackPeak,
+    'albumGainDb': albumGainDb, 'albumPeak': albumPeak,
   };
 
   factory MusicTrack.fromJson(Map<String, dynamic> json) => MusicTrack(
@@ -56,6 +68,11 @@ class MusicTrack {
     addedAt: (json['addedAt'] as num?)?.toInt() ?? 0,
     sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
     lyrics: json['lyrics'] as String? ?? '',
+    artPath: json['artPath'] as String? ?? '',
+    trackGainDb: (json['trackGainDb'] as num?)?.toDouble(),
+    trackPeak: (json['trackPeak'] as num?)?.toDouble(),
+    albumGainDb: (json['albumGainDb'] as num?)?.toDouble(),
+    albumPeak: (json['albumPeak'] as num?)?.toDouble(),
   );
 }
 

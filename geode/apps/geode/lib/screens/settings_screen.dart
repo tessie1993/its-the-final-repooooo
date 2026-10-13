@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geode_native/geode_native.dart';
 
 import '../components/components.dart';
 import '../components/gel_route.dart';
@@ -18,6 +19,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _retrying = false;
+  bool _deviceBusy = false;
   GeodeAppState get state => widget.state;
 
   @override
@@ -41,6 +43,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _destinations(context), const SizedBox(height: 22),
               _collectionStatus(context), const SizedBox(height: 22),
               _aboutPanel(context),
+              if (state.nativeVisuals.available) ...[
+                const SizedBox(height: 22), _deviceDestinations(context),
+              ],
             ]);
             if (constraints.maxWidth >= 820) {
               return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -86,7 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'More detailed light and reflections. Uses more graphics power.', state.scene.highQuality, state.setQuality),
         const Divider(height: 1),
         _setting(context, Icons.grain_rounded, 'Floating particles',
-          'Tiny suspended glints throughout the scene.', state.scene.particlesEnabled, state.setParticles),
+          'Seeds and fireflies throughout the landscape.', state.scene.particlesEnabled, state.setParticles),
         const Divider(height: 1),
         _setting(context, Icons.eco_outlined, 'Nature details',
           'Fern droplets and crystal accents around your world.', state.natureDetails, state.setNatureDetails),
@@ -94,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _destinations(BuildContext context) => _float(1.8, const Offset(.75, .45),
     GelPanel(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), child: Column(children: [
-      _navigation(context, Icons.headphones_rounded, 'Sound & playback', 'Volume, speed, repeat and sleep timer',
+      _navigation(context, Icons.headphones_rounded, 'Sound & playback', 'Equalizer, crossfade, repeat and sleep timer',
         () => showGelRoute(context, AudioSettingsScreen(state: state), name: '/settings/audio')),
       const Divider(height: 1, indent: 16, endIndent: 16),
       _navigation(context, Icons.tune_rounded, 'Shape the atmosphere', 'Materials, movement and your palette',
@@ -143,9 +148,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _aboutPanel(BuildContext context) => _float(3.2, const Offset(.65, .82),
     GelPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('Growing into its world', style: Theme.of(context).textTheme.titleMedium),
+      Text('Your own little world', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 9),
-      Text('The gel scene and local music player are available. Native audio-reactive scenes, video rendering and live wallpaper still need their engine connections.',
+      Text('Explore nature landscapes, music-reactive worlds and your own creative projects. Your collection stays on your device.',
         style: Theme.of(context).textTheme.bodySmall),
       const SizedBox(height: 16),
       Wrap(spacing: 12, runSpacing: 6, children: [
@@ -153,24 +158,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onPressed: () => showAboutDialog(context: context, applicationName: 'Geode',
             applicationVersion: '1.8.0 · build 32',
             applicationIcon: Image.asset('assets/images/fern-dew.png', width: 56, height: 56, excludeFromSemantics: true),
-            children: [const Text('Music, living landscapes and creative little worlds.\n\nThis Flutter interface includes a touch-reactive gel scene, local audio playback, saved looks and project editing. Native rendering integrations remain in development.')])),
+            children: [const Text('Music, living landscapes and creative little worlds.\n\nTouch-reactive landscapes, local music, audio-reactive visual worlds, saved looks and project editing.')])),
         TextButton.icon(icon: const Icon(Icons.description_outlined, size: 19), label: const Text('Licenses'),
           onPressed: () => showLicensePage(context: context, applicationName: 'Geode', applicationVersion: '1.8.0')),
       ]),
     ])));
+
+  Widget _deviceDestinations(BuildContext context) => GelPanel(child: Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('Nature beyond the app', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 12),
+      const Text('Bring your selected visual world to your home screen or screensaver.'),
+      const SizedBox(height: 12),
+      TextButton.icon(onPressed: _deviceBusy ? null : () => _deviceAction('wallpaper'),
+        icon: const Icon(Icons.wallpaper_rounded), label: const Text('Set live wallpaper')),
+      TextButton.icon(onPressed: _deviceBusy ? null : () => _deviceAction('screensaver'),
+        icon: const Icon(Icons.nights_stay_outlined), label: const Text('Choose screensaver')),
+      TextButton.icon(onPressed: _deviceBusy ? null : () => _deviceAction('widget'),
+        icon: const Icon(Icons.widgets_outlined), label: const Text('Add music widget')),
+    ]));
+
+  Future<void> _deviceAction(String action) async {
+    setState(() => _deviceBusy = true);
+    String? message;
+    try {
+      final native = GeodeNative.instance;
+      if (action == 'wallpaper') {
+        await native.setWallpaper();
+      } else if (action == 'screensaver') {
+        await native.openScreensaverSettings();
+      } else if (!await native.requestPinWidget()) {
+        message = 'Long-press your home screen, open Widgets, and choose Geode.';
+      }
+    } catch (_) {
+      message = 'This device could not open that option. Please try from Android settings.';
+    } finally {
+      if (mounted) setState(() => _deviceBusy = false);
+    }
+    if (message != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
 
   Widget _resetPanel(BuildContext context) => _float(3.7, const Offset(.35, .82),
     GelPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true),
         const SizedBox(width: 12), Expanded(child: Text('Back to the beginning', style: Theme.of(context).textTheme.titleMedium))]),
       const SizedBox(height: 12),
-      Text('Return to forest glass, gentle movement and full nature detail. Your saved worlds stay in your collection.',
+      Text('Return to forest sanctuary, gentle movement and full nature detail. Your saved worlds stay in your collection.',
         style: Theme.of(context).textTheme.bodyMedium),
       const SizedBox(height: 18),
       GelButton(label: 'Reset appearance', icon: Icons.restart_alt_rounded, primary: false,
         onPressed: () {
           state.resetAppearance();
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Forest glass restored.')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Forest sanctuary restored.')));
         }),
     ])));
 

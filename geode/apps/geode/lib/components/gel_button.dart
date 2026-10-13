@@ -1,91 +1,55 @@
 import 'package:flutter/material.dart';
 import '../theme/geode_theme.dart';
+import 'gel_panel.dart';
 
 class GelButton extends StatefulWidget {
-  const GelButton({
-    super.key,
-    required this.label,
-    required this.onPressed,
-    this.icon,
-    this.primary = true,
-  });
-
+  const GelButton({super.key, required this.label, required this.onPressed,
+    this.icon, this.primary = true});
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
   final bool primary;
-
   @override
   State<GelButton> createState() => _GelButtonState();
 }
 
 class _GelButtonState extends State<GelButton> {
   bool _pressed = false;
-
   @override
   Widget build(BuildContext context) {
-    final reducedMotion = MediaQuery.disableAnimationsOf(context);
     final enabled = widget.onPressed != null;
-    return AnimatedScale(
-      scale: _pressed && enabled && !reducedMotion ? .97 : 1,
-      duration: reducedMotion ? Duration.zero : const Duration(milliseconds: 180),
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return AnimatedContainer(
+      duration: reduced ? Duration.zero : const Duration(milliseconds: 160),
       curve: Curves.easeOutCubic,
+      transformAlignment: Alignment.center,
+      transform: Matrix4.identity()
+        ..setEntry(3, 2, .001)
+        ..setEntry(1, 3, _pressed && enabled && !reduced ? 2 : 0)
+        ..rotateX(_pressed && enabled && !reduced ? -.035 : 0),
       child: Listener(
-        onPointerDown: (_) => setState(() => _pressed = true),
+        onPointerDown: (_) { if (enabled) setState(() => _pressed = true); },
         onPointerUp: (_) => setState(() => _pressed = false),
         onPointerCancel: (_) => setState(() => _pressed = false),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: const [],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(22),
-            child: Material(
-              color: Colors.transparent,
-              child: Ink(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  image: widget.primary
-                      ? DecorationImage(
-                          image: const AssetImage('assets/images/nature-pebble.png'),
-                          fit: BoxFit.fill,
-                          opacity: enabled ? 1 : .45,
-                        )
-                      : null,
-                  gradient: widget.primary ? null : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: !enabled
-                        ? const [Color(0xFF30464C), Color(0xFF21373E)]
-                        : const [Color(0x75497583), Color(0x59214350)],
-                  ),
-                  border: widget.primary ? null : Border.all(color: Colors.white.withValues(alpha: .23), width: .9),
-                ),
-                child: TextButton(
-                  onPressed: widget.onPressed,
-                  style: TextButton.styleFrom(
-                    minimumSize: Size(widget.primary ? 160 : 48, widget.primary ? 72 : 54),
-                    padding: EdgeInsets.symmetric(horizontal: widget.primary ? 32 : 22, vertical: 16),
-                    foregroundColor: GeodeTokens.ink,
-                    disabledForegroundColor: GeodeTokens.muted,
-                    textStyle: Theme.of(context).textTheme.labelLarge,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (widget.icon != null) ...[
-                        Icon(widget.icon, size: 19),
-                        const SizedBox(width: 9),
-                      ],
-                      Flexible(child: Text(widget.label, textAlign: TextAlign.center,
-                          style: widget.primary ? const TextStyle(shadows: [Shadow(color: Color(0xFF04232B), blurRadius: 8)]) : null)),
-                    ],
-                  ),
-                ),
+        child: GelPanel(radius: widget.primary ? 32 : 24, blur: 8,
+          opacity: enabled ? (widget.primary ? .80 : .48) : .25,
+          highlighted: widget.primary && enabled, pearl: widget.primary,
+          padding: EdgeInsets.zero,
+          child: Material(color: Colors.transparent,
+            child: TextButton(onPressed: widget.onPressed,
+              style: TextButton.styleFrom(
+                minimumSize: Size(widget.primary ? 120 : 48, widget.primary ? 62 : 52),
+                padding: EdgeInsets.symmetric(horizontal: widget.primary ? 24 : 18, vertical: 14),
+                foregroundColor: GeodeTokens.ink,
+                disabledForegroundColor: GeodeTokens.muted.withValues(alpha: .5),
+                textStyle: Theme.of(context).textTheme.labelLarge,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
               ),
+              child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+                if (widget.icon != null) ...[Icon(widget.icon, size: 20), const SizedBox(width: 9)],
+                Flexible(child: Text(widget.label, textAlign: TextAlign.center,
+                  style: const TextStyle(shadows: [Shadow(color: Color(0x80022335), blurRadius: 6)]))),
+              ]),
             ),
           ),
         ),

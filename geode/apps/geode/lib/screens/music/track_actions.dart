@@ -21,11 +21,12 @@ class MusicTrackTile extends StatelessWidget {
     return Padding(padding: const EdgeInsets.symmetric(vertical: 4),
       child: GelFloat(controller: state.scene, anchor: const Offset(.5, .6),
         weight: 3.2, phase: (track.id.hashCode % 10).toDouble(),
-        child: GelPanel(radius: 21, opacity: current ? .73 : .4, blur: 6,
+        child: GelPanel(radius: 32, opacity: current ? .78 : .48, blur: 6,
+          pearl: true, highlighted: current,
           padding: const EdgeInsets.symmetric(horizontal: 6), child: ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       leading: Stack(alignment: Alignment.center, children: [
-        const MusicArtwork(size: 48, radius: 15),
+        MusicArtwork(size: 48, radius: 15, track: track),
         if (current) const Icon(Icons.graphic_eq_rounded, color: Colors.white),
       ]),
       title: Text(track.title, maxLines: 1, overflow: TextOverflow.ellipsis,
@@ -43,6 +44,7 @@ class MusicTrackTile extends StatelessWidget {
         itemBuilder: (_) => [
           PopupMenuItem(value: 'favorite', child: Text(state.music.favorites.contains(track.id) ? 'Unfavorite' : 'Add to favorites')),
           const PopupMenuItem(value: 'queue', child: Text('Add to queue')),
+          const PopupMenuItem(value: 'next', child: Text('Play next')),
           const PopupMenuItem(value: 'playlist', child: Text('Add to playlist')),
           const PopupMenuItem(value: 'details', child: Text('Track details & lyrics')),
           if (playlistId != null) const PopupMenuItem(value: 'removePlaylist', child: Text('Remove from playlist')),
@@ -59,10 +61,15 @@ Future<void> trackAction(BuildContext context, GeodeAppState state,
     case 'favorite': state.music.toggleFavorite(track.id); break;
     case 'queue':
       state.music.enqueue(track.id);
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Added to queue')));
+      if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Added to queue'))); }
       break;
     case 'playlist': await addTrackToPlaylist(context, state, track); break;
+    case 'next':
+      state.music.playNext(track.id);
+      if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Will play next'))); }
+      break;
     case 'details': await showTrackDetails(context, state, track); break;
     case 'removePlaylist':
       if (playlistId != null) state.music.removeFromPlaylist(playlistId, track.id);
@@ -100,6 +107,6 @@ Future<void> addTrackToPlaylist(BuildContext context, GeodeAppState state, Music
     playlistId = state.music.createPlaylist(name);
   }
   state.music.addToPlaylist(playlistId, track.id);
-  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Added to playlist')));
+  if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Added to playlist'))); }
 }

@@ -7,7 +7,7 @@ class GelMaterialPicker extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
 
-  static const names = ['Water', 'Opal', 'Mercury'];
+  static const names = ['Moss', 'Stone', 'Bark'];
 
   @override
   Widget build(BuildContext context) => Row(
@@ -26,8 +26,8 @@ class GelMaterialPicker extends StatelessWidget {
                     minimumSize: const Size(48, 92),
                     padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 12),
                     foregroundColor: active ? GeodeTokens.ink : GeodeTokens.muted,
-                    backgroundColor: active ? const Color(0x294FA0BA) : const Color(0x11071625),
-                    side: BorderSide(color: active ? const Color(0x998EC7D8) : const Color(0x20BCDFE9), width: .8),
+                    backgroundColor: active ? const Color(0xFF4D6240) : const Color(0xFF253D2E),
+                    side: BorderSide(color: active ? const Color(0xFF9BAB77) : const Color(0xFF4F6646), width: .8),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(19)),
                   ),
                   child: ExcludeSemantics(

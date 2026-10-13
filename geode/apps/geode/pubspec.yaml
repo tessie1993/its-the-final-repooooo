@@ -44,5 +44,6 @@ flutter:
     - assets/images/fern-dew.png
     - assets/images/crystal-fern.png
     - assets/images/stone-dial.png
+    - assets/textures/
   shaders:
-    - shaders/liquid_glass.frag
+    - shaders/nature_stone.frag

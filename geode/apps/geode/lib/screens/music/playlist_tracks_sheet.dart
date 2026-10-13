@@ -50,7 +50,7 @@ class _PlaylistTracksState extends State<_PlaylistTracks> {
                   return CheckboxListTile(value: selected.contains(track.id),
                     title: Text(track.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                     subtitle: Text(track.artist, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    secondary: const MusicArtwork(size: 44, radius: 15),
+                    secondary: MusicArtwork(size: 44, radius: 15, track: track),
                     onChanged: (value) {
                       if (value ?? false) { music.addToPlaylist(widget.playlistId, track.id); }
                       else { music.removeFromPlaylist(widget.playlistId, track.id); }

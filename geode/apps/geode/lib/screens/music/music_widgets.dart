@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../components/components.dart';
 import '../../media/music_controller.dart';
@@ -10,18 +11,23 @@ String formatMusicTime(Duration value) {
 }
 
 class MusicArtwork extends StatelessWidget {
-  const MusicArtwork({super.key, this.size = 64, this.radius = 22});
+  const MusicArtwork({super.key, this.size = 64, this.radius = 22, this.track});
   final double size;
   final double radius;
+  final MusicTrack? track;
+
+  Widget _fallback() => Image.asset('assets/images/fern-dew.png', fit: BoxFit.cover,
+    excludeFromSemantics: true,
+    errorBuilder: (_, error, stack) => const Icon(Icons.music_note_rounded));
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: 'Geode fern artwork', image: true,
+    label: track?.artPath.isNotEmpty == true ? 'Artwork for ${track!.album}' : 'Geode fern artwork', image: true,
     child: ClipRRect(borderRadius: BorderRadius.circular(radius),
       child: Container(width: size, height: size, color: const Color(0xFF153831),
-        child: Image.asset('assets/images/fern-dew.png', fit: BoxFit.cover,
-          excludeFromSemantics: true,
-          errorBuilder: (_, error, stack) => const Icon(Icons.music_note_rounded)),
+        child: track?.artPath.isNotEmpty == true ? Image.file(File(track!.artPath),
+          fit: BoxFit.cover, excludeFromSemantics: true, cacheWidth: (size * 3).round(),
+          errorBuilder: (_, error, stack) => _fallback()) : _fallback(),
       ),
     ),
   );
@@ -80,12 +86,12 @@ class MusicPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.transparent,
-    appBar: AppBar(title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis), backgroundColor: const Color(0x99061B22),
+    appBar: AppBar(title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis), backgroundColor: const Color(0x8614273A),
       surfaceTintColor: Colors.transparent, actions: actions),
     body: Stack(fit: StackFit.expand, children: [
       const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [Color(0xA3061B22), Color(0xE6061B22)]))),
+        colors: [Color(0x4D061B22), Color(0xB5061B22)]))),
       SafeArea(child: child),
     ]),
   );

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'components/components.dart';
 import 'components/mini_player.dart';
 import 'scene/scene_host.dart';
@@ -21,16 +22,40 @@ class GeodeApp extends StatefulWidget {
 
 class _GeodeAppState extends State<GeodeApp> with WidgetsBindingObserver {
   late final GeodeAppState state;
+  bool? _immersiveMode;
+  Future<void> _systemUiUpdate = Future<void>.value();
   @override
   void initState() {
     super.initState();
     state = GeodeAppState(enableDeviceServices: widget.enableDeviceServices);
+    state.addListener(_syncSystemUi);
     WidgetsBinding.instance.addObserver(this);
+    _syncSystemUi();
     unawaited(state.initialize());
+  }
+
+  void _syncSystemUi({bool force = false}) {
+    if (!widget.enableDeviceServices || !mounted) return;
+    if (!force && _immersiveMode == state.immersive) return;
+    _immersiveMode = state.immersive;
+    final mode = state.immersive
+        ? SystemUiMode.immersiveSticky
+        : SystemUiMode.edgeToEdge;
+    _systemUiUpdate = _systemUiUpdate.then((_) async {
+      try {
+        await SystemChrome.setEnabledSystemUIMode(mode);
+      } on PlatformException {
+        // Some hosts own their system bars. The in-app exit remains usable.
+      }
+    });
   }
   @override
   void didChangeAppLifecycleState(AppLifecycleState lifecycle) {
-    if (lifecycle != AppLifecycleState.resumed) unawaited(state.flush());
+    if (lifecycle == AppLifecycleState.resumed) {
+      _syncSystemUi(force: true);
+    } else {
+      unawaited(state.flush());
+    }
   }
   @override
   Widget build(BuildContext context) => MaterialApp(
@@ -43,6 +68,7 @@ class _GeodeAppState extends State<GeodeApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    state.removeListener(_syncSystemUi);
     state.dispose();
     super.dispose();
   }

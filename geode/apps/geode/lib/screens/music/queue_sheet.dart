@@ -33,6 +33,13 @@ class QueueSheet extends StatelessWidget {
                 Text('${music.queue.length} tracks · drag to reorder',
                   style: Theme.of(context).textTheme.bodyMedium),
               ])),
+              if (music.queue.isNotEmpty) IconButton(tooltip: 'Clear queue',
+                icon: const Icon(Icons.playlist_remove_rounded), onPressed: () async {
+                  if (await confirmMusicAction(context, title: 'Clear queue?',
+                    message: 'Playback will stop. Your library and playlists are kept.', action: 'Clear')) {
+                    await music.clearQueue();
+                  }
+                }),
               IconButton(tooltip: 'Close queue', icon: const Icon(Icons.close),
                 onPressed: () => Navigator.pop(context)),
             ])),
@@ -44,7 +51,7 @@ class QueueSheet extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
             buildDefaultDragHandles: false,
             itemCount: music.queue.length,
-            onReorder: music.moveQueue,
+            onReorderItem: music.moveQueue,
             itemBuilder: (context, index) {
               final id = music.queue[index];
               final matches = music.tracks.where((track) => track.id == id);

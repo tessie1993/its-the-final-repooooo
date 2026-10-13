@@ -33,7 +33,7 @@ class _TrackDetailsScreenState extends State<TrackDetailsScreen> {
     child: SingleChildScrollView(padding: const EdgeInsets.all(20),
       child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 640),
         child: Form(key: _form, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Center(child: MusicArtwork(size: 140, radius: 40)),
+          Center(child: MusicArtwork(size: 140, radius: 40, track: widget.track)),
           const SizedBox(height: 24),
           GelPanel(child: Column(children: [
             TextFormField(controller: _title, decoration: const InputDecoration(labelText: 'Title'),

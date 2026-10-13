@@ -32,7 +32,7 @@ class _PresetLibraryScreenState extends State<PresetLibraryScreen> {
       final looks = state.looks.where((look) =>
         (_filter != 1 || state.favorites.contains(look.id)) &&
         (_filter != 2 || look.saved) &&
-        '${look.name} ${look.description} ${['water', 'opal', 'mercury'][look.material]}'
+        '${look.name} ${look.description} ${['moss', 'stone', 'bark'][look.material]}'
           .toLowerCase().contains(query)).toList();
       return VisualPageShell(title: 'Your little worlds', subtitle: 'Presets & scene collection',
         actions: [PopupMenuButton<String>(tooltip: 'Manage look collection',
@@ -55,11 +55,11 @@ class _PresetLibraryScreenState extends State<PresetLibraryScreen> {
               Wrap(spacing: 10, runSpacing: 10, children: [
                 ChoiceChip(label: Text('Looks · ${state.looks.length}'), selected: !_native,
                   onSelected: (_) => setState(() => _native = false)),
-                ChoiceChip(label: Text('Native scenes · ${nativeSceneCatalog.length}'), selected: _native,
+                ChoiceChip(label: Text('Visual scenes · ${state.nativeVisuals.scenes.isEmpty ? nativeSceneCatalog.length : state.nativeVisuals.scenes.length}'), selected: _native,
                   onSelected: (_) => setState(() => _native = true)),
               ]),
               const SizedBox(height: 20),
-              if (_native) NativeSceneCatalog(query: query) else ...[
+              if (_native) NativeSceneCatalog(query: query, state: state) else ...[
                 Wrap(spacing: 8, runSpacing: 8, children: [
                   _filterChip('All looks', 0), _filterChip('Favorites', 1), _filterChip('Saved by you', 2),
                 ]),

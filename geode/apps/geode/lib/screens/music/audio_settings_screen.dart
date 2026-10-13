@@ -29,17 +29,16 @@ class AudioSettingsScreen extends StatelessWidget {
               _slider(context, title: 'Volume', valueLabel: '${(music.volume * 100).round()}%',
                 icon: Icons.volume_up_outlined, value: music.volume, min: 0, max: 1,
                 divisions: 100, onChanged: music.setVolume),
-              const Divider(height: 32),
-              _slider(context, title: 'Playback speed', valueLabel: '${music.speed.toStringAsFixed(2)}×',
-                icon: Icons.speed_rounded, value: music.speed, min: .5, max: 2,
-                divisions: 30, onChanged: music.setSpeed),
-              const Divider(height: 32),
-              _slider(context, title: 'Pitch', valueLabel: '${music.pitch > 0 ? '+' : ''}${music.pitch.toStringAsFixed(0)} semitones',
-                icon: Icons.music_note_outlined, value: music.pitch, min: -12, max: 12,
-                divisions: 24, onChanged: music.setPitch),
+              if (music.speedAvailable) ...[
+                const Divider(height: 32),
+                _slider(context, title: 'Playback speed', valueLabel: '${music.speed.toStringAsFixed(2)}×',
+                  icon: Icons.speed_rounded, value: music.speed, min: .5, max: 2,
+                  divisions: 30, onChanged: music.setSpeed),
+              ],
               const SizedBox(height: 10),
               Align(alignment: Alignment.centerRight, child: TextButton.icon(
-                onPressed: () { music.setVolume(1); music.setSpeed(1); music.setPitch(0); },
+                onPressed: () { music.setVolume(1);
+                  if (music.speedAvailable) music.setSpeed(1); },
                 icon: const Icon(Icons.restart_alt_rounded), label: const Text('Reset playback'))),
             ]))),
             const SizedBox(height: 22),
@@ -96,8 +95,48 @@ class AudioSettingsScreen extends StatelessWidget {
                 ]),
               ],
             ]))),
+            if (music.equalizerAvailable) ...[
+              const SizedBox(height: 22),
+              GelPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Listening texture', style: text.titleLarge),
+                const SizedBox(height: 18),
+                _slider(context, title: 'Bass boost', valueLabel: '${(music.bassBoost * 100).round()}%',
+                  icon: Icons.speaker_rounded, value: music.bassBoost, min: 0, max: 1,
+                  divisions: 20, onChanged: (value) => music.setSoundEffects(bass: value)),
+                const SizedBox(height: 18),
+                _slider(context, title: 'Loudness', valueLabel: '+${music.loudnessDb.toStringAsFixed(1)} dB',
+                  icon: Icons.volume_up_rounded, value: music.loudnessDb, min: 0, max: 10,
+                  divisions: 20, onChanged: (value) => music.setSoundEffects(loudness: value)),
+                const SizedBox(height: 18),
+                _slider(context, title: 'Preamp', valueLabel: '${music.preampDb > 0 ? '+' : ''}${music.preampDb.toStringAsFixed(1)} dB',
+                  icon: Icons.tune_rounded, value: music.preampDb, min: -15, max: 15,
+                  divisions: 60, onChanged: (value) => music.setSoundEffects(preamp: value)),
+                SwitchListTile(contentPadding: EdgeInsets.zero,
+                  title: const Text('Headphone crossfeed'),
+                  subtitle: const Text('Blend a little of each stereo channel for a relaxed headphone sound.'),
+                  value: music.crossfeed, onChanged: (value) => music.setSoundEffects(headphoneCrossfeed: value)),
+                SwitchListTile(contentPadding: EdgeInsets.zero,
+                  title: const Text('Peak limiter'), subtitle: const Text('Keep boosted peaks from clipping.'),
+                  value: music.limiter, onChanged: (value) => music.setSoundEffects(peakLimiter: value)),
+                const Divider(height: 28),
+                Text('ReplayGain', style: text.titleMedium),
+                const SizedBox(height: 8),
+                const Text('Use embedded loudness tags to balance songs or preserve an album’s dynamics. '
+                  'Tracks without tags keep their original level.'),
+                const SizedBox(height: 12),
+                Wrap(spacing: 8, children: [
+                  for (final mode in const {'off': 'Off', 'track': 'Track', 'album': 'Album'}.entries)
+                    ChoiceChip(label: Text(mode.value), selected: music.replayGainMode == mode.key,
+                      onSelected: (_) => music.setSoundEffects(replayGain: mode.key)),
+                ]),
+                Align(alignment: Alignment.centerRight, child: TextButton.icon(
+                  onPressed: () => music.setSoundEffects(bass: 0, loudness: 0, preamp: 0,
+                    headphoneCrossfeed: false, peakLimiter: true, replayGain: 'off'),
+                  icon: const Icon(Icons.restart_alt_rounded), label: const Text('Reset effects'))),
+              ])),
+            ],
             const SizedBox(height: 24),
-            Text('Audio settings are applied to your local music playback.', style: text.bodySmall),
+            Text('Audio settings are saved and applied to the music you play.', style: text.bodySmall),
           ]),
         )),
       );
@@ -106,7 +145,7 @@ class AudioSettingsScreen extends StatelessWidget {
 
   Widget _slider(BuildContext context, {required String title, required String valueLabel,
     required IconData icon, required double value, required double min, required double max,
-    required int divisions, required ValueChanged<double> onChanged}) => Column(
+    required int divisions, required ValueChanged<double>? onChanged}) => Column(
       crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [Icon(icon, color: GeodeTokens.ice), const SizedBox(width: 12),
           Expanded(child: Wrap(alignment: WrapAlignment.spaceBetween, spacing: 12, runSpacing: 6,

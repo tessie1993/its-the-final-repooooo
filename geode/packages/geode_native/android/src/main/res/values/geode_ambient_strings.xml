@@ -1,0 +1,13 @@
+<resources>
+    <string name="geode_wallpaper_name">Geode · Living nature</string>
+    <string name="geode_wallpaper_description">Your Geode visualizer as a touch-responsive live wallpaper. Reacts to Geode playback and follows your selected scene.</string>
+    <string name="geode_dream_name">Geode · Nature screensaver</string>
+    <string name="geode_widget_name">Geode music player</string>
+    <string name="geode_widget_description">Now playing and music controls in moss and stone.</string>
+    <string name="geode_widget_title">Your music, rooted in nature</string>
+    <string name="geode_widget_open">Open Geode to choose your music</string>
+    <string name="geode_widget_previous">Previous track</string>
+    <string name="geode_widget_play">Play</string>
+    <string name="geode_widget_pause">Pause</string>
+    <string name="geode_widget_next">Next track</string>
+</resources>

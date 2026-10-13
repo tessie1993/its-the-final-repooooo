@@ -5,6 +5,8 @@ import '../state/geode_app_state.dart';
 import '../theme/geode_theme.dart';
 import 'library_screen.dart';
 import 'visuals/visual_customizer_screen.dart';
+import 'visuals/native_visual_customizer.dart';
+import 'visuals/native_scene_catalog.dart';
 import 'visuals/visual_source_sheet.dart';
 import 'visuals/visual_widgets.dart';
 
@@ -48,7 +50,7 @@ class VisualizerScreen extends StatelessWidget {
 
   Widget _sceneSpace(double height) => SizedBox(height: height,
     child: Stack(clipBehavior: Clip.none, children: [
-      if (state.natureDetails) ...[
+      if (state.natureDetails && !state.nativeVisuals.enabled) ...[
         Positioned(right: -15, top: 0, child: GelFloat(controller: state.scene,
           anchor: const Offset(.83, .34), weight: .65, phase: 1.2,
           child: Image.asset('assets/images/crystal-fern.png', width: 130, height: 130,
@@ -72,7 +74,8 @@ class VisualizerScreen extends StatelessWidget {
     alignment: WrapAlignment.spaceBetween, children: [
       Text(state.scene.paused ? 'SCENE PAUSED' : 'LIVING LANDSCAPE',
         style: const TextStyle(fontSize: 9, letterSpacing: 1.9, color: GeodeTokens.accent)),
-      const Text('Forest sanctuary  ·  Ambient motion', style: TextStyle(fontSize: 10, color: GeodeTokens.muted)),
+      Text(state.nativeVisuals.enabled ? _visualName : '${state.selectedLook.name} · Nature in motion',
+        style: const TextStyle(fontSize: 10, color: GeodeTokens.muted)),
     ]);
 
   Widget _quickActions(BuildContext context) => VisualFloat(state: state,
@@ -83,7 +86,8 @@ class VisualizerScreen extends StatelessWidget {
           () => openVisualPage(context, PresetLibraryScreen(state: state)))),
         Container(width: 1, height: 30, color: GeodeTokens.ice.withValues(alpha: .14)),
         Expanded(child: _action(context, Icons.tune_rounded, 'Customize',
-          () => openVisualPage(context, VisualCustomizerScreen(state: state)))),
+          () => openVisualPage(context, state.nativeVisuals.enabled
+            ? NativeVisualCustomizer(state: state) : VisualCustomizerScreen(state: state)))),
         Container(width: 1, height: 30, color: GeodeTokens.ice.withValues(alpha: .14)),
         Expanded(child: _action(context, Icons.graphic_eq_rounded, 'Source',
           () => showVisualSourceSheet(context, state))),
@@ -104,9 +108,10 @@ class VisualizerScreen extends StatelessWidget {
             Text(state.isEdited ? 'YOUR EVOLVING LOOK' : 'CURRENT LOOK',
               style: const TextStyle(fontSize: 9, letterSpacing: 1.8, color: GeodeTokens.accent)),
             const SizedBox(height: 7),
-            Text(state.selectedLook.name, style: const TextStyle(fontSize: 22, letterSpacing: -.4)),
+            Text(_visualName, style: const TextStyle(fontSize: 22, letterSpacing: -.4)),
             const SizedBox(height: 5),
-            const Text('Water, light & a little wonder', style: TextStyle(fontSize: 11, color: GeodeTokens.muted)),
+            Text(state.nativeVisuals.enabled ? 'A world shaped by your sound' : 'Moss, stone & a little wonder',
+              style: const TextStyle(fontSize: 11, color: GeodeTokens.muted)),
           ])),
           GelIconButton(icon: state.isEdited ? Icons.bookmark_add_outlined : state.favorites.contains(state.selectedLookId)
               ? Icons.favorite_rounded : Icons.favorite_border_rounded,
@@ -116,7 +121,13 @@ class VisualizerScreen extends StatelessWidget {
               else { state.toggleFavorite(state.selectedLookId); } }),
         ]),
         const SizedBox(height: 22),
-        GelMaterialPicker(selectedIndex: state.scene.materialIndex, onChanged: state.setMaterial),
+        if (state.nativeVisuals.enabled) Row(children: [
+          Expanded(child: GelButton(label: 'Previous', primary: false, icon: Icons.skip_previous_rounded,
+            onPressed: () => _stepVisual(-1))),
+          const SizedBox(width: 8),
+          Expanded(child: GelButton(label: 'Next', primary: false, icon: Icons.skip_next_rounded,
+            onPressed: () => _stepVisual(1))),
+        ]) else GelMaterialPicker(selectedIndex: state.scene.materialIndex, onChanged: state.setMaterial),
         const SizedBox(height: 18),
         GelSlider(label: 'Flow intensity', value: state.scene.energy, onChanged: state.setEnergy),
         const SizedBox(height: 8),
@@ -129,6 +140,30 @@ class VisualizerScreen extends StatelessWidget {
             onPressed: () => state.setImmersive(true)),
         ]),
       ])));
+
+  String get _visualName {
+    if (!state.nativeVisuals.enabled) return state.selectedLook.name;
+    final preset = state.nativeVisuals.milkPreset;
+    if (state.nativeVisuals.sceneId == 'milkdrop' && preset != null) {
+      return preset.split('/').last.replaceFirst(RegExp(r'\.milk$'), '');
+    }
+    for (final entry in nativeSceneCatalog) {
+      if (entry.id == state.nativeVisuals.sceneId) return entry.name;
+    }
+    return state.nativeVisuals.sceneId.replaceAll('_', ' ');
+  }
+
+  void _stepVisual(int direction) {
+    final native = state.nativeVisuals;
+    if (native.loading) return;
+    if (native.sceneId == 'milkdrop' && native.presets.isNotEmpty) {
+      final current = native.presets.indexOf(native.milkPreset ?? '');
+      native.selectMilkPreset(native.presets[(current + direction) % native.presets.length]);
+    } else if (native.scenes.isNotEmpty) {
+      final current = native.scenes.indexOf(native.sceneId);
+      native.selectScene(native.scenes[(current + direction) % native.scenes.length]);
+    }
+  }
 
   Widget _natureNote(BuildContext context) => GelFloat(controller: state.scene,
     anchor: const Offset(.78, .7), weight: .7, phase: 2,

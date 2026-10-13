@@ -12,6 +12,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  just_audio: ^0.10.6
   geode_native:
     path: ../geode_native
   geode_engine:

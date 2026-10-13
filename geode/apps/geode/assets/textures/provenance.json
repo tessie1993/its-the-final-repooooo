@@ -1,0 +1,33 @@
+{
+  "generated": "2026-10-13",
+  "materials": [
+    {
+      "material": "moss",
+      "file": "moss.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: a seamless square 3D material color texture for a premium nature-themed Flutter music player UI and animated shader surfaces. Primary request: forest moss material, extremely detailed velvety cushion moss, tiny leafy fronds, deep pine greens and muted olive tips, occasional tiny dark earth recesses, tactile and organic. Composition: orthographic straight-down macro view, texture fills every pixel edge to edge, flat material swatch, no objects or scene perspective. Lighting: soft perfectly diffuse even illumination, no directional shadows, no highlights baked into the texture. Seamlessly repeating edges, visually homogeneous all over. No text, labels, frame, border, grid, watermark, glass, plastic or UI. Create a high-resolution square bitmap.",
+      "source": "OpenAI built-in image generation",
+      "role": "Material color texture"
+    },
+    {
+      "material": "river-stone",
+      "file": "river-stone.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: a seamless square 3D material color texture for a premium nature-themed Flutter music player UI and animated shader surfaces. Primary request: matte river stone basalt material, smooth weathered slate surface with delicate mineral grain, charcoal and warm gray earth tones, subtle pale fine veins, very faint natural pitting, beautifully tactile. Composition: orthographic straight-down macro view of ONE continuous stone surface, fills every pixel edge to edge, flat material swatch, no separate pebbles or scene perspective. Lighting: soft perfectly diffuse even illumination, no directional shadows or baked specular light. Seamlessly repeating edges, homogeneous material, quiet restrained contrast to support readable controls. No text, labels, frame, border, grid, watermark, glass, plastic or UI. Create high-resolution square bitmap.",
+      "source": "OpenAI built-in image generation",
+      "role": "Material color texture"
+    },
+    {
+      "material": "bark",
+      "file": "bark.png",
+      "prompt": "Use case: photorealistic-natural. Asset type: a seamless square 3D material color texture for a premium nature-themed Flutter music player UI and animated shader surfaces. Primary request: weathered cedar bark material, fine fibrous organic ridges and softly eroded grain, warm dark walnut brown and muted ochre fibers, natural narrow cracks, beautiful tactile forest surface. Composition: orthographic straight-down macro view of one continuous bark surface, texture fills all pixels edge to edge, flat material swatch, no tree silhouettes, objects or scene perspective. Lighting: soft perfectly diffuse even illumination, no hard shadows or baked specular light. Seamlessly repeating edges, moderately subtle homogeneous contrast suitable for readable controls. No text, labels, frame, border, grid, watermark, glass, plastic or UI. Create high-resolution square bitmap.",
+      "source": "OpenAI built-in image generation",
+      "role": "Material color texture"
+    },
+    {
+      "material": "bioluminescent",
+      "file": "bioluminescent-veins.png",
+      "prompt": "Use case: stylized-concept. Asset type: transparent RGBA bioluminescent EMISSION OVERLAY TEXTURE for a 3D nature UI material in a music app. Primary request: an airy intricate interconnected lattice of extremely fine organic mycelium veins and delicate fern capillary fronds, scattered tiny luminous spores, glowing soft mint-green and cyan with a few muted amber nodes. Genuinely see-through: most pixels between the thin veins are FULLY TRANSPARENT alpha, and the luminous filaments have soft semi-transparent falloff. No solid background or opaque membrane. Composition: straight-down flat high-resolution square texture filling the canvas, continuous irregular evenly distributed network suitable for repeating over moss, stone and wood. No central object. Visual: luminous microscopic forest biology, refined and photoreal material detail with restrained bloom, no glass, no plastic, no text, no labels, no border or shadow, no checkerboard painted in. Actual alpha transparency required.",
+      "source": "OpenAI built-in image generation",
+      "role": "RGBA emissive/translucent overlay"
+    }
+  ]
+}

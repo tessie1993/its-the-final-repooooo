@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import '../../media/music_controller.dart';
+import '../../media/music_lyrics.dart';
 import '../../components/components.dart';
 import '../../state/geode_app_state.dart';
 import '../../theme/geode_theme.dart';
@@ -30,7 +33,7 @@ class LyricsSheet extends StatelessWidget {
     child: ListenableBuilder(listenable: state.music, builder: (context, _) {
       final music = state.music;
       final track = music.currentTrack;
-      final lines = _parseLyrics(track?.lyrics ?? '');
+      final lines = parseLyrics(track?.lyrics ?? '');
       final timed = lines.any((line) => line.time != null);
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(padding: const EdgeInsets.fromLTRB(24, 4, 16, 16), child: Row(children: [
@@ -64,69 +67,91 @@ class LyricsSheet extends StatelessWidget {
             child: Text(timed ? 'Timed lyrics · tap a line to seek' : 'Your saved lyrics',
               style: Theme.of(context).textTheme.bodySmall)),
           const SizedBox(height: 8),
-          Expanded(child: ValueListenableBuilder<Duration>(valueListenable: music.position,
-            builder: (context, position, _) {
-              var active = -1;
-              for (var i = 0; i < lines.length; i++) {
-                if (lines[i].time != null && lines[i].time! <= position) active = i;
-              }
-              return ListView.builder(padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
-                itemCount: lines.length, itemBuilder: (context, index) {
-                  final line = lines[index];
-                  final selected = index == active;
-                  return Padding(padding: const EdgeInsets.only(bottom: 12),
-                    child: Material(color: Colors.transparent, child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: line.time == null ? null : () => music.seek(line.time!),
-                      child: AnimatedContainer(
-                        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero :
-                          const Duration(milliseconds: 220),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),
-                          color: selected ? GeodeTokens.ice.withValues(alpha: .13) : Colors.transparent),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          if (line.time != null) Text(formatMusicTime(line.time!),
-                            style: Theme.of(context).textTheme.labelSmall),
-                          const SizedBox(height: 4),
-                          Text(line.text, style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: selected || !timed ? GeodeTokens.ink : GeodeTokens.muted,
-                            height: 1.45)),
-                        ])))));
-                });
-            })),
+          Expanded(child: _FollowingLyrics(key: ValueKey('${track?.id}:${track?.lyrics.hashCode}'),
+            music: music, lines: lines, timed: timed)),
         ],
       ]);
     }),
   ));
 }
 
-class _LyricLine {
-  const _LyricLine(this.text, this.time);
-  final String text;
-  final Duration? time;
+class _FollowingLyrics extends StatefulWidget {
+  const _FollowingLyrics({super.key, required this.music, required this.lines, required this.timed});
+  final MusicController music;
+  final List<LyricLine> lines;
+  final bool timed;
+  @override
+  State<_FollowingLyrics> createState() => _FollowingLyricsState();
 }
 
-List<_LyricLine> _parseLyrics(String lyrics) {
-  final result = <_LyricLine>[];
-  final timestamp = RegExp(r'\[(\d{1,3}):(\d{2})(?:[.:](\d{1,3}))?\]');
-  for (final raw in lyrics.split('\n')) {
-    final text = raw.replaceAll(timestamp, '').trim();
-    if (text.isEmpty || RegExp(r'^\[(ar|al|ti|by|offset):', caseSensitive: false).hasMatch(text)) continue;
-    final matches = timestamp.allMatches(raw);
-    if (matches.isEmpty) {
-      result.add(_LyricLine(text, null));
-    } else {
-      for (final match in matches) {
-        final millis = (match.group(3) ?? '').padRight(3, '0');
-        result.add(_LyricLine(text, Duration(minutes: int.parse(match.group(1)!),
-          seconds: int.parse(match.group(2)!), milliseconds: int.parse(millis))));
+class _FollowingLyricsState extends State<_FollowingLyrics> {
+  final _scroll = ScrollController();
+  bool _following = true;
+  int _lastActive = -2;
+  @override
+  void dispose() { _scroll.dispose(); super.dispose(); }
+
+  void _follow(int active, double height) {
+    if (!_following || active < 0 || !_scroll.hasClients) return;
+    final target = (12 + active * height - _scroll.position.viewportDimension / 2 + height / 2)
+        .clamp(0.0, _scroll.position.maxScrollExtent).toDouble();
+    if (MediaQuery.disableAnimationsOf(context)) { _scroll.jumpTo(target); }
+    else { _scroll.animateTo(target, duration: const Duration(milliseconds: 350), curve: Curves.easeOut); }
+  }
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<Duration>(
+    valueListenable: widget.music.position, builder: (context, position, _) {
+      final active = activeLyricIndex(widget.lines, position);
+      final rowHeight = 138 * MediaQuery.textScalerOf(context).scale(1);
+      if (active != _lastActive) {
+        _lastActive = active;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _follow(active, rowHeight);
+        });
       }
-    }
-  }
-  if (result.every((line) => line.time != null)) {
-    result.sort((a, b) => a.time!.compareTo(b.time!));
-  }
-  return result;
+      return Stack(children: [
+        NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            if (notification.direction != ScrollDirection.idle && _following) {
+              setState(() => _following = false);
+            }
+            return false;
+          },
+          child: ListView.builder(controller: _scroll,
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 70),
+            itemExtent: rowHeight, itemCount: widget.lines.length,
+            itemBuilder: (context, index) {
+              final line = widget.lines[index];
+              final selected = index == active;
+              return Padding(padding: const EdgeInsets.only(bottom: 12),
+                child: Material(color: Colors.transparent, child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: line.time == null ? null : () => widget.music.seek(line.time!),
+                  child: AnimatedContainer(
+                    duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 220),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),
+                      color: selected ? GeodeTokens.ice.withValues(alpha: .13) : Colors.transparent),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center, children: [
+                        if (line.time != null) Text(formatMusicTime(line.time!),
+                          style: Theme.of(context).textTheme.labelSmall),
+                        const SizedBox(height: 4),
+                        Flexible(child: Tooltip(message: line.text,
+                          child: Text(line.text.isEmpty ? '♪' : line.text, maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: selected || !widget.timed ? GeodeTokens.ink : GeodeTokens.muted, height: 1.4)))),
+                      ])))));
+            })),
+        if (widget.timed && !_following) Positioned(bottom: 12, right: 24,
+          child: FilledButton.icon(onPressed: () {
+            setState(() => _following = true);
+            _follow(active, rowHeight);
+          }, icon: const Icon(Icons.my_location_rounded), label: const Text('Follow lyrics'))),
+      ]);
+    });
 }
 
 class _LyricsEditorDialog extends StatefulWidget {
