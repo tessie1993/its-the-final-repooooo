@@ -29,32 +29,39 @@ set(GEODE_LINK_OPTIONS
 # per-ABI configure the Android Gradle plugin runs) sees.
 find_package(Git REQUIRED)
 set(GEODE_PROJECTM_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/projectm")
-set(GEODE_PROJECTM_PATCH "${CMAKE_CURRENT_SOURCE_DIR}/tools/projectm-v4.1.7-render-fbo-backport.patch")
-execute_process(
-    COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${GEODE_PROJECTM_PATCH}"
-    WORKING_DIRECTORY "${GEODE_PROJECTM_DIR}"
-    RESULT_VARIABLE geode_projectm_patched
-    OUTPUT_QUIET ERROR_QUIET)
-if(NOT geode_projectm_patched EQUAL 0)
+function(geode_apply_projectm_patch patch_name)
+    set(GEODE_PROJECTM_PATCH "${CMAKE_CURRENT_SOURCE_DIR}/tools/${patch_name}")
     execute_process(
-        COMMAND "${GIT_EXECUTABLE}" apply "${GEODE_PROJECTM_PATCH}"
+        COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${GEODE_PROJECTM_PATCH}"
         WORKING_DIRECTORY "${GEODE_PROJECTM_DIR}"
-        RESULT_VARIABLE geode_projectm_apply)
-    if(NOT geode_projectm_apply EQUAL 0)
-        # A parallel configure may have applied it in between; only fail if it is still missing.
+        RESULT_VARIABLE geode_projectm_patched
+        OUTPUT_QUIET ERROR_QUIET)
+    if(NOT geode_projectm_patched EQUAL 0)
         execute_process(
-            COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${GEODE_PROJECTM_PATCH}"
+            COMMAND "${GIT_EXECUTABLE}" apply "${GEODE_PROJECTM_PATCH}"
             WORKING_DIRECTORY "${GEODE_PROJECTM_DIR}"
-            RESULT_VARIABLE geode_projectm_patched
-            OUTPUT_QUIET ERROR_QUIET)
-        if(NOT geode_projectm_patched EQUAL 0)
-            message(FATAL_ERROR
-                "Could not apply ${GEODE_PROJECTM_PATCH} to third_party/projectm. "
-                "Run 'git submodule update --init --recursive' and make sure the submodule is at v4.1.7 "
-                "with no other local changes.")
+            RESULT_VARIABLE geode_projectm_apply)
+        if(NOT geode_projectm_apply EQUAL 0)
+            # A parallel configure may have applied it in between; only fail if it is still missing.
+            execute_process(
+                COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${GEODE_PROJECTM_PATCH}"
+                WORKING_DIRECTORY "${GEODE_PROJECTM_DIR}"
+                RESULT_VARIABLE geode_projectm_patched
+                OUTPUT_QUIET ERROR_QUIET)
+            if(NOT geode_projectm_patched EQUAL 0)
+                message(FATAL_ERROR
+                    "Could not apply ${GEODE_PROJECTM_PATCH} to third_party/projectm. "
+                    "Run 'git submodule update --init --recursive' and make sure the submodule is at v4.1.7 "
+                    "with no other local changes.")
+            endif()
         endif()
     endif()
-endif()
+endfunction()
+
+geode_apply_projectm_patch(projectm-v4.1.7-render-fbo-backport.patch)
+# projectM 4.1.7 uses the top-level project's version in its generated API header.
+# Use its own version when embedded, otherwise those numeric macros are empty.
+geode_apply_projectm_patch(projectm-v4.1.7-subproject-version.patch)
 
 # Same values .github/workflows/native-libs.yml passed when the engine was a prebuilt blob.
 set(CMAKE_BUILD_TYPE Release CACHE STRING "" FORCE)
@@ -88,6 +95,7 @@ add_library(geode SHARED
     app/src/main/cpp/geode_tags_jni.cpp
     app/src/main/cpp/geode_player_jni.cpp
     packages/geode_native/android/src/main/cpp/NativeSession.cpp
+    packages/geode_native/android/src/main/cpp/geode_ambient_jni.cpp
     packages/geode_native/android/src/main/cpp/geode_export_jni.cpp
     packages/geode_native/android/src/main/cpp/geode_flutter_jni.cpp)
 target_compile_options(geode PRIVATE ${GEODE_COMPILE_OPTIONS})

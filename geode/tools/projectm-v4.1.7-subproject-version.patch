@@ -1,0 +1,29 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -64,7 +64,7 @@
+ set(PROJECTM_LIBRARY_BASE_OUTPUT_NAME "projectM-${PROJECT_VERSION_MAJOR}")
+ 
+ # The actual (full) library version of projectM
+-set(PROJECTM_LIB_VERSION "${CMAKE_PROJECT_VERSION}")
++set(PROJECTM_LIB_VERSION "${PROJECT_VERSION}")
+ 
+ list(APPEND CMAKE_MODULE_PATH "${PROJECTM_SOURCE_DIR}/cmake")
+ 
+--- a/src/api/version.h.in
++++ b/src/api/version.h.in
+@@ -1,11 +1,11 @@
+ #pragma once
+ 
+-#define PROJECTM_VERSION_MAJOR @CMAKE_PROJECT_VERSION_MAJOR@
+-#define PROJECTM_VERSION_MINOR @CMAKE_PROJECT_VERSION_MINOR@
+-#define PROJECTM_VERSION_PATCH @CMAKE_PROJECT_VERSION_PATCH@
++#define PROJECTM_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
++#define PROJECTM_VERSION_MINOR @PROJECT_VERSION_MINOR@
++#define PROJECTM_VERSION_PATCH @PROJECT_VERSION_PATCH@
+ 
+ /* Full version number as a string literal */
+-#define PROJECTM_VERSION_STRING "@CMAKE_PROJECT_VERSION@"
++#define PROJECTM_VERSION_STRING "@PROJECT_VERSION@"
+ 
+ /* VCS version number, e.g. Git commit hash */
+ #define PROJECTM_VERSION_VCS "@PROJECTM_VCS_VERSION@"

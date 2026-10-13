@@ -105,9 +105,11 @@ jobs:
           set -euo pipefail
           apk=build/app/outputs/flutter-apk/app-debug.apk
           for abi in arm64-v8a x86_64; do
-            unzip -l "$apk" "lib/$abi/libgeode.so" | grep "lib/$abi/libgeode.so"
+            for library in libgeode.so libprojectM-4.so libc++_shared.so; do
+              unzip -l "$apk" "lib/$abi/$library" | grep -F "lib/$abi/$library"
+            done
           done
-          sha256sum "$apk" > "$apk.sha256"
+          (cd "$(dirname "$apk")" && sha256sum app-debug.apk > app-debug.apk.sha256)
       - name: Android lint
         run: cd android && ./gradlew :app:lintDebug --stacktrace --no-daemon
       - name: Upload installable debug APK
