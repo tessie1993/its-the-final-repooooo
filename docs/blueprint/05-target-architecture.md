@@ -61,6 +61,8 @@ New C entry points: `geode_engine_*` (open/queue/transport/state snapshot), `geo
 
 ## 5.5 Dart state: splitting `PlayerSession`
 
+> Update: the app follows the official Flutter architecture skill, with ChangeNotifier view models + repositories exposed through `provider`, rather than Riverpod. The split below still applies; each provider becomes a repository/service plus the view models that use it.
+
 Graphify showed that `PlayerSession` has 185 symbols across about 20 controllers. Each
 controller becomes its own Riverpod `Notifier`, with an explicit dependency graph and no god
 object:
@@ -85,8 +87,8 @@ D1 options `audio_service` + `home_widget`.
 
 ```
 /
-├─ app/                       Flutter app (flutter create --org dev.geode --platforms android)
-│  ├─ lib/{ui,state,domain,data,native}/
+├─ app/                       Flutter app (exists: basic navigable UI, see app/README.md)
+│  ├─ lib/{app,ui,data,domain,native}/
 │  ├─ assets/{shaders,milk,theme_packs,fonts,catalog}/   ← from geode/app/src/main/{assets,res}
 │  ├─ android/                FlutterActivity + shims (D1) + externalNativeBuild → ../native
 │  └─ test/ integration_test/
