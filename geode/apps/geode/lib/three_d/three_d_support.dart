@@ -31,3 +31,37 @@ double threeDPixelRatio(BuildContext context, GeodeAppState state) {
   final ratio = MediaQuery.devicePixelRatioOf(context);
   return state.scene.highQuality ? ratio : ratio.clamp(1.0, 2.0).toDouble();
 }
+
+/// Makes the app state reachable from widgets built without it (artwork, pebbles,
+/// thumbnails). Rebuilt by the scene host whenever the 3D-relevant settings change.
+class GeodeStateScope extends InheritedWidget {
+  const GeodeStateScope({super.key, required this.state, required this.enabled,
+    required this.highQuality, required super.child});
+
+  final GeodeAppState state;
+
+  /// Whether GPU 3D is allowed at all (device services and nature details on).
+  final bool enabled;
+  final bool highQuality;
+
+  static GeodeStateScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<GeodeStateScope>();
+
+  @override
+  bool updateShouldNotify(GeodeStateScope old) =>
+      old.state != state || old.enabled != enabled || old.highQuality != highQuality;
+}
+
+/// [threeDModeOf] for widgets that only have a [BuildContext]: flat outside the app's
+/// scene host (dialogs built without it, widget previews) and in tests.
+ThreeDMode threeDModeIn(BuildContext context) {
+  final scope = GeodeStateScope.maybeOf(context);
+  if (scope == null || !scope.enabled) return ThreeDMode.flat;
+  return threeDModeOf(context, scope.state);
+}
+
+double threeDPixelRatioIn(BuildContext context) {
+  final scope = GeodeStateScope.maybeOf(context);
+  final ratio = MediaQuery.devicePixelRatioOf(context);
+  return scope != null && scope.highQuality ? ratio : ratio.clamp(1.0, 2.0).toDouble();
+}

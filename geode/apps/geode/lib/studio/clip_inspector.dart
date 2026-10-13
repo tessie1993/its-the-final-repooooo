@@ -4,6 +4,7 @@ import 'clip_properties_dialog.dart';
 import 'keyframe_editor.dart';
 import 'studio_controller.dart';
 import 'studio_dialogs.dart';
+import '../three_d/asset_3d.dart';
 
 class ClipInspector extends StatelessWidget {
   const ClipInspector({super.key, required this.studio, required this.pausePreview});
@@ -18,8 +19,8 @@ class ClipInspector extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     if (clip == null) {
       return GelPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Center(child: Image.asset('assets/images/crystal-fern.png', width: 130, height: 100,
-        excludeFromSemantics: true, errorBuilder: (_, error, stack) => const Icon(Icons.spa_outlined, size: 58))),
+      Center(child: Asset3D.boxed(asset: Geode3DAsset.crystalFern, width: 130, height: 100, fallback: Image.asset('assets/images/crystal-fern.png', width: 130, height: 100,
+        excludeFromSemantics: true, errorBuilder: (_, error, stack) => const Icon(Icons.spa_outlined, size: 58)))),
       Text('A little detail changes everything.', style: text.titleLarge),
       const SizedBox(height: 10),
       const Text('Select a clip to shape its timing and material. Add your first clip above.'),

@@ -9,6 +9,7 @@ import 'visuals/native_visual_customizer.dart';
 import 'visuals/native_scene_catalog.dart';
 import 'visuals/visual_source_sheet.dart';
 import 'visuals/visual_widgets.dart';
+import '../three_d/asset_3d.dart';
 
 class VisualizerScreen extends StatelessWidget {
   const VisualizerScreen({super.key, required this.state});
@@ -53,11 +54,11 @@ class VisualizerScreen extends StatelessWidget {
       if (state.natureDetails && !state.nativeVisuals.enabled) ...[
         Positioned(right: -15, top: 0, child: GelFloat(controller: state.scene,
           anchor: const Offset(.83, .34), weight: .65, phase: 1.2,
-          child: Image.asset('assets/images/crystal-fern.png', width: 130, height: 130,
-            semanticLabel: 'Fern suspended in translucent crystal'))),
+          child: Asset3D.boxed(asset: Geode3DAsset.crystalFern, spin: true, semanticsLabel: 'Fern suspended in translucent crystal', width: 130, height: 130, fallback: Image.asset('assets/images/crystal-fern.png', width: 130, height: 130,
+            semanticLabel: 'Fern suspended in translucent crystal')))),
         Positioned(left: 2, top: 23, child: GelFloat(controller: state.scene,
           anchor: const Offset(.21, .36), weight: .6, phase: 3.6,
-          child: Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true))),
+          child: Asset3D.boxed(asset: Geode3DAsset.fernDew, width: 42, height: 42, fallback: Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true)))),
       ],
       Positioned(left: 0, bottom: 17, child: GelFloat(controller: state.scene,
         anchor: const Offset(.18, .50), weight: .8, phase: 2.6,

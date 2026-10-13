@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../components/components.dart';
 import '../../media/music_controller.dart';
 import '../../theme/geode_theme.dart';
+import '../../three_d/asset_3d.dart';
 
 String formatMusicTime(Duration value) {
   final seconds = value.inSeconds.clamp(0, 999999);
@@ -16,9 +17,9 @@ class MusicArtwork extends StatelessWidget {
   final double radius;
   final MusicTrack? track;
 
-  Widget _fallback() => Image.asset('assets/images/fern-dew.png', fit: BoxFit.cover,
+  Widget _fallback() => Asset3D(asset: Geode3DAsset.stoneDial, fallback: Image.asset('assets/images/fern-dew.png', fit: BoxFit.cover,
     excludeFromSemantics: true,
-    errorBuilder: (_, error, stack) => const Icon(Icons.music_note_rounded));
+    errorBuilder: (_, error, stack) => const Icon(Icons.music_note_rounded)));
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -62,8 +63,8 @@ class MusicEmpty extends StatelessWidget {
   Widget build(BuildContext context) => GelPanel(child: Column(
     crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        Image.asset('assets/images/crystal-fern.png', width: 80, height: 80,
-          fit: BoxFit.contain, excludeFromSemantics: true),
+        Asset3D.boxed(asset: Geode3DAsset.crystalFern, width: 80, height: 80, fallback: Image.asset('assets/images/crystal-fern.png', width: 80, height: 80,
+          fit: BoxFit.contain, excludeFromSemantics: true)),
         const SizedBox(width: 12), Icon(icon, color: GeodeTokens.accent, size: 28),
       ]),
       const SizedBox(height: 18),

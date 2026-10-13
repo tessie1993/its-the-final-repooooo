@@ -9,6 +9,7 @@ import '../theme/geode_theme.dart';
 import 'library_screen.dart';
 import 'music/audio_settings_screen.dart';
 import 'visuals/visual_customizer_screen.dart';
+import '../three_d/asset_3d.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, required this.state});
@@ -72,7 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Text('Find your own kind of quiet.', style: Theme.of(context).textTheme.bodyLarge),
       ])),
       if (state.natureDetails) Padding(padding: const EdgeInsets.only(left: 8),
-        child: Image.asset('assets/images/crystal-fern.png', width: 88, height: 108, excludeFromSemantics: true)),
+        child: Asset3D.boxed(asset: Geode3DAsset.crystalFern, width: 88, height: 108, fallback: Image.asset('assets/images/crystal-fern.png', width: 88, height: 108, excludeFromSemantics: true))),
     ]));
 
   Widget _preferences(BuildContext context) => _float(1, const Offset(.35, .5),
@@ -157,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         TextButton.icon(icon: const Icon(Icons.info_outline_rounded, size: 19), label: const Text('About Geode'),
           onPressed: () => showAboutDialog(context: context, applicationName: 'Geode',
             applicationVersion: '1.8.0 · build 32',
-            applicationIcon: Image.asset('assets/images/fern-dew.png', width: 56, height: 56, excludeFromSemantics: true),
+            applicationIcon: Asset3D.boxed(asset: Geode3DAsset.fernDew, width: 56, height: 56, fallback: Image.asset('assets/images/fern-dew.png', width: 56, height: 56, excludeFromSemantics: true)),
             children: [const Text('Music, living landscapes and creative little worlds.\n\nTouch-reactive landscapes, local music, audio-reactive visual worlds, saved looks and project editing.')])),
         TextButton.icon(icon: const Icon(Icons.description_outlined, size: 19), label: const Text('Licenses'),
           onPressed: () => showLicensePage(context: context, applicationName: 'Geode', applicationVersion: '1.8.0')),
@@ -202,7 +203,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _resetPanel(BuildContext context) => _float(3.7, const Offset(.35, .82),
     GelPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true),
+      Row(children: [Asset3D.boxed(asset: Geode3DAsset.fernDew, width: 42, height: 42, fallback: Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true)),
         const SizedBox(width: 12), Expanded(child: Text('Back to the beginning', style: Theme.of(context).textTheme.titleMedium))]),
       const SizedBox(height: 12),
       Text('Return to forest sanctuary, gentle movement and full nature detail. Your saved worlds stay in your collection.',

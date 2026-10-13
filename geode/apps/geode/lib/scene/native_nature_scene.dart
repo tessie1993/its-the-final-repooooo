@@ -5,14 +5,17 @@ import 'package:flutter/painting.dart' show HSVColor;
 import 'package:flutter_scene/scene.dart' as fs;
 import 'package:vector_math/vector_math.dart' as vm;
 
+import '../three_d/geode_materials.dart';
+import '../three_d/geode_meshes.dart';
 import 'geode_scene_controller.dart';
 import 'nature_geometry.dart';
 
-/// Small, genuinely three-dimensional nature accents rendered by Flutter GPU.
-/// The existing fragment shader remains the full-screen environment; this
-/// transparent pass adds depth-tested meshes and physically based materials.
+/// The 3D nature world behind every screen, rendered by Flutter GPU over the
+/// full-screen nature shader: a still pool ringed by moss, river and bark stones,
+/// fern fronds, a quartz cluster, a jade ring and floating dew. Each shell
+/// destination is a camera station; navigating glides the camera between them.
 class NativeNatureScene {
-  NativeNatureScene() {
+  NativeNatureScene(this._materials) {
     scene
       ..environmentIntensity = .85
       ..exposure = 1.05
@@ -24,6 +27,25 @@ class NativeNatureScene {
       );
     _buildGeometry();
   }
+
+  final GeodeMaterials _materials;
+
+  /// Shell destination (0 visuals, 1 music, 2 studio, 3 settings, -1 immersive).
+  int destination = 0;
+  double _lastTime = -1;
+
+  // Camera stations: (eye, target) per destination.
+  static final _stations = <int, (vm.Vector3, vm.Vector3)>{
+    -1: (vm.Vector3(0, -.2, -7.2), vm.Vector3(0, -.1, 0)),
+    0: (vm.Vector3(0, 0, -6.5), vm.Vector3.zero()),
+    1: (vm.Vector3(1.25, .35, -6.1), vm.Vector3(.35, -.35, .2)),
+    2: (vm.Vector3(-1.35, .85, -6.2), vm.Vector3(-.4, .05, .1)),
+    3: (vm.Vector3(.2, 2.3, -5.6), vm.Vector3(0, -.85, .6)),
+  };
+
+  final _pool = fs.Node(name: 'Still pool');
+  final _stones = <fs.Node>[];
+  final _ferns = <fs.Node>[];
 
   final scene = fs.Scene();
   final camera = fs.PerspectiveCamera(
@@ -114,9 +136,74 @@ class NativeNatureScene {
       scene.add(node);
     }
     scene..add(_crystals)..add(_jade);
+
+    _pool.add(fs.Node(name: 'Water', mesh: fs.Mesh(fs.DiscGeometry(radius: 3.2, segments: 64),
+      GeodeMaterials.water())));
+    _pool.position = vm.Vector3(0, -2.55, 1.2);
+    scene.add(_pool);
+    final pebble = GeodeMeshes.pebble();
+    final smallPebble = GeodeMeshes.pebble(seed: 21, segments: 24, rings: 14);
+    // (x, y, z, scale, material, yaw): stones around the pool's near rim.
+    const stones = [
+      (-1.55, -2.30, -.10, .48, 0, .4), (-.85, -2.42, .45, .30, 1, 1.2), (1.35, -2.32, .05, .42, 2, 2.1),
+      (.55, -2.45, -.35, .24, 1, .7), (2.05, -2.20, .85, .36, 0, 2.8), (-2.15, -2.18, 1.0, .34, 2, 1.6),
+    ];
+    for (final (x, y, z, size, material, yaw) in stones) {
+      final node = fs.Node(name: 'River stone', mesh: fs.Mesh(size > .35 ? pebble : smallPebble,
+        _materials.stone(material, glow: material == 0 ? .25 : 0)))
+        ..localTransform = (vm.Matrix4.identity()
+          ..translateByDouble(x, y, z, 1)
+          ..rotateY(yaw)
+          ..scaleByDouble(size, size, size, 1));
+      _stones.add(node);
+      scene.add(node);
+    }
+    final fern = GeodeMeshes.fern();
+    final leaf = GeodeMaterials.leaf();
+    // (x, y, z, scale, lean, yaw): fronds rising behind the stones.
+    const ferns = [(-1.85, -1.55, .35, 1.05, .35, .3), (-1.25, -1.75, .75, .8, .15, 1.1),
+      (1.75, -1.6, .45, .95, -.4, 2.6), (2.25, -1.4, 1.1, .85, -.25, 2.2)];
+    for (final (x, y, z, size, lean, yaw) in ferns) {
+      final node = fs.Node(name: 'Fern frond', mesh: fs.Mesh(fern, leaf))
+        ..localTransform = (vm.Matrix4.identity()
+          ..translateByDouble(x, y, z, 1)
+          ..rotateY(yaw)
+          ..rotateZ(lean)
+          ..scaleByDouble(size, size, size, 1));
+      _ferns.add(node);
+      scene.add(node);
+    }
   }
 
-  void update(GeodeSceneController controller) {
+  void _glideCamera(GeodeSceneController controller, double aspect) {
+    final station = _stations[destination] ?? _stations[0]!;
+    // Narrow portrait screens pull back so the stations keep their framing.
+    final pullBack = aspect < .75 ? (.75 - aspect) * 3.2 : 0.0;
+    final eye = station.$1 + vm.Vector3(0, 0, -pullBack);
+    final target = station.$2;
+    final time = controller.time;
+    final dt = _lastTime < 0 ? 1.0 : (time - _lastTime).clamp(0.0, .1).toDouble();
+    _lastTime = time;
+    // Reduced motion jumps straight to the station; otherwise ease in ~0.6 s.
+    final blend = controller.effectiveReducedMotion ? 1.0 : 1 - math.exp(-dt * 5);
+    final tilt = controller.effectiveReducedMotion ? Offset.zero : controller.tilt;
+    camera.position.setFrom(camera.position + (eye + vm.Vector3(tilt.dx * .18, -tilt.dy * .12, 0)
+      - camera.position) * blend);
+    camera.target.setFrom(camera.target + (target - camera.target) * blend);
+  }
+
+  void _swayFerns(double t, double wind) {
+    for (var i = 0; i < _ferns.length; i++) {
+      final sway = math.sin(t * (.55 + i * .07) + i * 1.7) * (.035 + wind * .06);
+      _ferns[i].mutateLocalTransform((matrix) => matrix.rotateZ(sway - (_fernSway[i])));
+      _fernSway[i] = sway;
+    }
+  }
+
+  late final List<double> _fernSway = List.filled(_ferns.length, 0);
+
+  void update(GeodeSceneController controller, {double aspect = .5}) {
+    _glideCamera(controller, aspect);
     final t = controller.effectiveReducedMotion ? 0.0 : controller.time;
     final tilt = controller.effectiveReducedMotion ? Offset.zero : controller.tilt;
     final wake = controller.effectiveReducedMotion ? 0.0 : controller.pulse;
@@ -156,6 +243,7 @@ class NativeNatureScene {
         ..rotateZ(side * .12)
         ..scaleByDouble(1.8, .85, .72, 1));
     }
+    _swayFerns(t, controller.audioBass);
     _updateMaterials(controller);
     scene.renderScale = controller.highQuality ? .85 : .65;
     // All movement uses the shared, bounded gel clock. Explicitly prevent

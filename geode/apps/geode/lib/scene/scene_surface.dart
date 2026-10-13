@@ -22,6 +22,7 @@ class SceneSurface extends StatefulWidget {
     this.orbScale = 1.0,
     this.interactive = true,
     this.enableNativeScene = true,
+    this.destination = 0,
   });
 
   final GeodeSceneController controller;
@@ -29,6 +30,9 @@ class SceneSurface extends StatefulWidget {
   final double orbScale;
   final bool interactive;
   final bool enableNativeScene;
+
+  /// The shell destination; the 3D world's camera glides to its station.
+  final int destination;
 
   @override
   State<SceneSurface> createState() => _SceneSurfaceState();
@@ -192,7 +196,8 @@ class _SceneSurfaceState extends State<SceneSurface>
       );
       final layers = Stack(fit: StackFit.expand, children: [
         painting,
-        if (widget.enableNativeScene) NativeNatureLayer(controller: widget.controller),
+        if (widget.enableNativeScene) NativeNatureLayer(controller: widget.controller,
+          destination: widget.destination),
       ]);
       if (!widget.interactive) return layers;
       return Listener(
