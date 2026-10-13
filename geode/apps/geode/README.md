@@ -1,17 +1,15 @@
-# geode
+# Geode Flutter UI
 
-A new Flutter project.
+Nature-inspired interface with a shared touch-reactive gel field, photographic
+moss/glass components and a raymarched 3D water sculpture.
 
-## Getting Started
+The app has four destinations: Visuals, Library, Studio and Settings. Preset
+selection, materials, motion intensity, pause, favorites, session saves, reduced
+motion and render-detail preferences work in the local UI state. Native music,
+media-library and timeline/export integrations remain separate porting work.
 
-This project is a starting point for a Flutter application.
+See [the blueprint](../../docs/design/NATURE_UI_BLUEPRINT.md) for file boundaries,
+materials, motion rules, navigation, limitations and validation status.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+From the `geode` workspace root, run `flutter pub get`, then from this directory
+run `flutter analyze`, `flutter test`, and `flutter run` with the configured SDK.

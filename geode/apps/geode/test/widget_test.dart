@@ -1,30 +1,28 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:geode/main.dart';
+import 'package:geode/app.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('Nature UI opens and navigates to its collection and preferences', (tester) async {
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const GeodeApp());
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Find your\nflow.'), findsOneWidget);
+    await tester.tap(find.text('Library'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Your collection'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'not a saved look');
     await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('No looks found'), findsOneWidget);
+    await tester.tap(find.text('Settings'));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Make it yours'), findsOneWidget);
+    await tester.tap(find.byType(Switch).first);
+    await tester.pump();
+    expect(tester.widget<Switch>(find.byType(Switch).first).value, isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

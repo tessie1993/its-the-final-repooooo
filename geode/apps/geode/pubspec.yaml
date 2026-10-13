@@ -32,3 +32,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/forest-sanctuary.png
+    - assets/images/nature-pebble.png
+    - assets/images/fern-dew.png
+  shaders:
+    - shaders/liquid_glass.frag
