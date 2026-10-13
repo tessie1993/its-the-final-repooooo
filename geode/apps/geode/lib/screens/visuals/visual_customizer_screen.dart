@@ -79,7 +79,7 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
             const SizedBox(height: 9),
             Text(state.selectedLook.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 9),
-            Text('${['Water', 'Opal', 'Mercury'][state.scene.materialIndex]} · ${(state.scene.energy * 100).round()}% flow',
+            Text('${['Moss', 'Stone', 'Bark'][state.scene.materialIndex]} · ${(state.scene.energy * 100).round()}% flow',
               style: const TextStyle(color: GeodeTokens.ink, fontSize: 12)),
           ])),
       ]))));
@@ -98,14 +98,14 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
         _lock('material', 'Material'),
       ]),
       const SizedBox(height: 7),
-      const Text('Choose a surface for the living gel. The scene responds as you explore.'),
+      const Text('Choose moss, weathered stone or warm bark. Light and grain follow your selection.'),
       const SizedBox(height: 22),
       GelMaterialPicker(selectedIndex: state.scene.materialIndex, onChanged: state.setMaterial),
       const SizedBox(height: 20),
       Text(switch (state.scene.materialIndex) {
-        1 => 'OPAL  /  Soft mineral light with pearlescent depth.',
-        2 => 'MERCURY  /  Polished liquid metal with flowing reflections.',
-        _ => 'WATER  /  Clear blue glass with refractive edges.',
+        1 => 'STONE  /  Weathered river rock with soft mineral veins.',
+        2 => 'BARK  /  Warm wood grain carved by flowing water.',
+        _ => 'MOSS  /  A soft green surface with fine woodland texture.',
       }, style: Theme.of(context).textTheme.bodySmall),
       const Divider(height: 34),
       _toggle(context, 'Living nature', 'Fern droplets and crystal details around your scene.',
@@ -118,16 +118,16 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
         state.scene.effectiveReducedMotion ? 'Motion is reduced. Your flow setting is kept for later.' : 'From a quiet drift to a lively current.'),
       const Divider(height: 32),
       _parameter('rippleStrength', 'Touch ripples', state.scene.rippleStrength, state.setRippleStrength,
-        'The strength of waves that travel through the shared gel.'),
+        'The strength of waves that travel across the water.'),
     ]))),
     const SizedBox(height: 18),
     VisualFloat(state: state, phase: 2, child: GelPanel(child: Column(children: [
-      _toggle(context, 'Suspended particles', 'Small glints of light moving through the scene.',
+      _toggle(context, 'Suspended particles', 'Seeds and fireflies moving through the scene.',
         state.scene.particlesEnabled, state.setParticles),
       const SizedBox(height: 16),
       _parameter('particleDensity', 'Particle density', state.scene.particleDensity,
         state.scene.particlesEnabled ? state.setParticleDensity : null,
-        state.scene.particlesEnabled ? 'Set the number of glints in the water.' : 'Turn on suspended particles to change their density.'),
+        state.scene.particlesEnabled ? 'Set the number of seeds above the water.' : 'Turn on suspended particles to change their density.'),
       const Divider(height: 28),
       _toggle(context, 'Reduced motion', 'Keep the atmosphere still and remove reactive movement.',
         state.scene.reducedMotion, state.setReducedMotion),
@@ -146,7 +146,7 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
       crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [Expanded(child: Text('Find your light', style: Theme.of(context).textTheme.titleLarge)), _lock('hue', 'Palette')]),
         const SizedBox(height: 8),
-        const Text('A wash of color through the gel. Pick a mood or find a shade between.'),
+        const Text('A wash of color across the landscape. Pick a mood or find a shade between.'),
         const SizedBox(height: 22),
         Wrap(spacing: 14, runSpacing: 16, children: [
           for (final palette in palettes) Semantics(button: true, label: '${palette.name} palette',
@@ -168,7 +168,7 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
           gradient: LinearGradient(colors: List.generate(7, (i) => HSVColor.fromAHSV(1, i * 60.0, .45, .9).toColor())))),
         const SizedBox(height: 18),
         GelSlider(label: 'Color hue', value: state.scene.hue, onChanged: state.setHue,
-          description: 'Changes the tint of the rendered gel and its particles.'),
+          description: 'Changes the tint of the landscape and its floating seeds.'),
       ])));
   }
 

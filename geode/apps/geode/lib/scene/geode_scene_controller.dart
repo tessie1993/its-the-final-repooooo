@@ -27,6 +27,12 @@ class GeodeSceneController extends ChangeNotifier {
   double _particleDensity = .6;
   double _rippleStrength = .65;
   double _displayEnergy = .42;
+  double _audioRms = 0;
+  double _audioBass = 0;
+  double _audioMid = 0;
+  double _audioTreble = 0;
+  double _lastAudioBeat = -1;
+  double _previousOnset = 0;
   int _materialIndex = 0;
   double _displayMaterial = 0;
   bool _reducedMotion = false;
@@ -55,6 +61,11 @@ class GeodeSceneController extends ChangeNotifier {
   double get particleDensity => _particleDensity;
   double get rippleStrength => _rippleStrength;
   double get displayEnergy => _displayEnergy;
+  double get audioRms => _audioRms;
+  double get audioBass => _audioBass;
+  double get audioMid => _audioMid;
+  double get audioTreble => _audioTreble;
+  bool get audioActive => _audioRms > .005;
   int get materialIndex => _materialIndex;
   double get displayMaterial => _displayMaterial;
   bool get reducedMotion => _reducedMotion;
@@ -139,6 +150,29 @@ class GeodeSceneController extends ChangeNotifier {
     _energy = value.clamp(0.0, 1.0).toDouble();
     if (motionDisabled) _displayEnergy = _energy;
     notifyListeners();
+  }
+
+  /// Receives actual PCM measurements from the playback engine. User intensity
+  /// remains the baseline; audio adds a bounded envelope without moving controls
+  /// more than their normal six-pixel range. Silence restores ambient motion.
+  void setAudioFeatures({required double rms, required double bass,
+    required double mid, required double treble, required double onset}) {
+    if (_disposed) return;
+    double bounded(double value) => value.isFinite ? value.clamp(0.0, 1.0).toDouble() : 0;
+    _audioRms = bounded(rms);
+    _audioBass = bounded(bass);
+    _audioMid = bounded(mid);
+    _audioTreble = bounded(treble);
+    final beat = bounded(onset);
+    if (!motionDisabled && _audioRms > .005 && beat > .3 &&
+        _previousOnset <= .3 && _time - _lastAudioBeat > .24) {
+      _lastAudioBeat = _time;
+      _pulse = math.max(_pulse, beat * .5);
+      _addRipple(const Offset(.5, .64), beat * .55);
+    }
+    _previousOnset = beat;
+    // The shared scene ticker handles repainting. No second audio animation
+    // loop or widget-tree rebuild is scheduled for each PCM block.
   }
 
   void setMaterial(int value) {
@@ -249,7 +283,6 @@ class GeodeSceneController extends ChangeNotifier {
   }
 
   /// Time integration is capped and subdivided to keep resumed apps stable.
-  @visibleForTesting
   void advance(double seconds, {bool? systemReducedMotion}) {
     if (_disposed || !seconds.isFinite || seconds <= 0) return;
     if (systemReducedMotion != null) setSystemReducedMotion(systemReducedMotion);
@@ -267,7 +300,8 @@ class GeodeSceneController extends ChangeNotifier {
     _pulse *= math.exp(-dt * 2.4);
     _ripples.removeWhere((ripple) => _time - ripple.startedAt > 3.8);
     final blend = 1 - math.exp(-dt * 5);
-    _displayEnergy += (_energy - _displayEnergy) * blend;
+    final audioEnergy = (_energy + _audioRms * .55 + _audioBass * .2).clamp(0.0, 1.0);
+    _displayEnergy += (audioEnergy - _displayEnergy) * blend;
     _displayMaterial += (_materialIndex - _displayMaterial) * blend;
     notifyListeners();
   }

@@ -4,7 +4,7 @@ import 'package:flutter_scene/scene.dart' as fs;
 import 'geode_scene_controller.dart';
 import 'native_nature_scene.dart';
 
-/// An optional transparent GPU pass; the underlying glass shader is retained
+/// An optional transparent GPU pass; the underlying nature shader is retained
 /// when the platform cannot initialize Flutter GPU.
 class NativeNatureLayer extends StatefulWidget {
   const NativeNatureLayer({super.key, required this.controller});
@@ -49,7 +49,7 @@ class _NativeNatureLayerState extends State<NativeNatureLayer> {
 
 class _NativeNaturePainter extends CustomPainter {
   _NativeNaturePainter(this.nature, this.controller, this.pixelRatio)
-    : super(repaint: controller);
+    : super(repaint: Listenable.merge([controller, nature.scene.repaintRequested]));
   final NativeNatureScene nature;
   final GeodeSceneController controller;
   final double pixelRatio;

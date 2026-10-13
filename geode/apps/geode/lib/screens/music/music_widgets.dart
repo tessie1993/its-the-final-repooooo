@@ -80,12 +80,12 @@ class MusicPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: Colors.transparent,
-    appBar: AppBar(title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis), backgroundColor: const Color(0x99061B22),
+    appBar: AppBar(title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis), backgroundColor: const Color(0x8614273A),
       surfaceTintColor: Colors.transparent, actions: actions),
     body: Stack(fit: StackFit.expand, children: [
       const DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        colors: [Color(0xA3061B22), Color(0xE6061B22)]))),
+        colors: [Color(0x4D061B22), Color(0xB5061B22)]))),
       SafeArea(child: child),
     ]),
   );

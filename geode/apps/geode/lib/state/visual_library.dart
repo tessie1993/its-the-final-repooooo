@@ -16,12 +16,12 @@ class VisualLibrary extends ChangeNotifier {
   final bool enableDeviceServices;
   static const storageKey = 'geode.ui.looks.v1';
   static const _seed = [
-    NatureLook(id: 'forest-glass', name: 'Forest glass',
-      description: 'Clear water · quiet ripples', material: 0, energy: .42),
+    NatureLook(id: 'forest-glass', name: 'Forest sanctuary',
+      description: 'Moss & fern · quiet ripples', material: 0, energy: .42),
     NatureLook(id: 'moonstone', name: 'Moonstone',
-      description: 'Opal quartz · slow drift', material: 1, energy: .25, hue: .72),
-    NatureLook(id: 'silver-spring', name: 'Silver spring',
-      description: 'Liquid silver · flowing light', material: 2, energy: .68, hue: .4),
+      description: 'River stone · slow drift', material: 1, energy: .25, hue: .72),
+    NatureLook(id: 'silver-spring', name: 'Woodland current',
+      description: 'Warm bark · flowing light', material: 2, energy: .68, hue: .4),
   ];
   final List<NatureLook> _looks = [..._seed];
   final Set<String> _favorites = {'forest-glass'};

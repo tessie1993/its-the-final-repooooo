@@ -18,7 +18,7 @@ class VisualPageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xB8061B22),
+    backgroundColor: const Color(0x75061B22),
     body: SafeArea(child: Column(children: [
       Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1100),
         child: Padding(padding: const EdgeInsets.fromLTRB(16, 12, 20, 16),

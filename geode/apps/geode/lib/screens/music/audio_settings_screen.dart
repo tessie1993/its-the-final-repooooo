@@ -32,14 +32,18 @@ class AudioSettingsScreen extends StatelessWidget {
               const Divider(height: 32),
               _slider(context, title: 'Playback speed', valueLabel: '${music.speed.toStringAsFixed(2)}×',
                 icon: Icons.speed_rounded, value: music.speed, min: .5, max: 2,
-                divisions: 30, onChanged: music.setSpeed),
+                divisions: 30, onChanged: music.speedAvailable ? music.setSpeed : null),
+              if (!music.speedAvailable) Text('Original speed is used for this audio output.', style: text.bodySmall),
               const Divider(height: 32),
               _slider(context, title: 'Pitch', valueLabel: '${music.pitch > 0 ? '+' : ''}${music.pitch.toStringAsFixed(0)} semitones',
                 icon: Icons.music_note_outlined, value: music.pitch, min: -12, max: 12,
-                divisions: 24, onChanged: music.setPitch),
+                divisions: 24, onChanged: music.pitchAvailable ? music.setPitch : null),
+              if (!music.pitchAvailable) Text('Original pitch is used for this audio output.', style: text.bodySmall),
               const SizedBox(height: 10),
               Align(alignment: Alignment.centerRight, child: TextButton.icon(
-                onPressed: () { music.setVolume(1); music.setSpeed(1); music.setPitch(0); },
+                onPressed: () { music.setVolume(1);
+                  if (music.speedAvailable) music.setSpeed(1);
+                  if (music.pitchAvailable) music.setPitch(0); },
                 icon: const Icon(Icons.restart_alt_rounded), label: const Text('Reset playback'))),
             ]))),
             const SizedBox(height: 22),
@@ -106,7 +110,7 @@ class AudioSettingsScreen extends StatelessWidget {
 
   Widget _slider(BuildContext context, {required String title, required String valueLabel,
     required IconData icon, required double value, required double min, required double max,
-    required int divisions, required ValueChanged<double> onChanged}) => Column(
+    required int divisions, required ValueChanged<double>? onChanged}) => Column(
       crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [Icon(icon, color: GeodeTokens.ice), const SizedBox(width: 12),
           Expanded(child: Wrap(alignment: WrapAlignment.spaceBetween, spacing: 12, runSpacing: 6,

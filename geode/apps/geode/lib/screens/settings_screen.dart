@@ -86,7 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'More detailed light and reflections. Uses more graphics power.', state.scene.highQuality, state.setQuality),
         const Divider(height: 1),
         _setting(context, Icons.grain_rounded, 'Floating particles',
-          'Tiny suspended glints throughout the scene.', state.scene.particlesEnabled, state.setParticles),
+          'Seeds and fireflies throughout the landscape.', state.scene.particlesEnabled, state.setParticles),
         const Divider(height: 1),
         _setting(context, Icons.eco_outlined, 'Nature details',
           'Fern droplets and crystal accents around your world.', state.natureDetails, state.setNatureDetails),
@@ -143,9 +143,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _aboutPanel(BuildContext context) => _float(3.2, const Offset(.65, .82),
     GelPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text('Growing into its world', style: Theme.of(context).textTheme.titleMedium),
+      Text('Your own little world', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 9),
-      Text('The gel scene and local music player are available. Native audio-reactive scenes, video rendering and live wallpaper still need their engine connections.',
+      Text('Explore nature landscapes, music-reactive worlds and your own creative projects. Your collection stays on your device.',
         style: Theme.of(context).textTheme.bodySmall),
       const SizedBox(height: 16),
       Wrap(spacing: 12, runSpacing: 6, children: [
@@ -153,7 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onPressed: () => showAboutDialog(context: context, applicationName: 'Geode',
             applicationVersion: '1.8.0 · build 32',
             applicationIcon: Image.asset('assets/images/fern-dew.png', width: 56, height: 56, excludeFromSemantics: true),
-            children: [const Text('Music, living landscapes and creative little worlds.\n\nThis Flutter interface includes a touch-reactive gel scene, local audio playback, saved looks and project editing. Native rendering integrations remain in development.')])),
+            children: [const Text('Music, living landscapes and creative little worlds.\n\nTouch-reactive landscapes, local music, audio-reactive visual worlds, saved looks and project editing.')])),
         TextButton.icon(icon: const Icon(Icons.description_outlined, size: 19), label: const Text('Licenses'),
           onPressed: () => showLicensePage(context: context, applicationName: 'Geode', applicationVersion: '1.8.0')),
       ]),
@@ -164,13 +164,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Row(children: [Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true),
         const SizedBox(width: 12), Expanded(child: Text('Back to the beginning', style: Theme.of(context).textTheme.titleMedium))]),
       const SizedBox(height: 12),
-      Text('Return to forest glass, gentle movement and full nature detail. Your saved worlds stay in your collection.',
+      Text('Return to forest sanctuary, gentle movement and full nature detail. Your saved worlds stay in your collection.',
         style: Theme.of(context).textTheme.bodyMedium),
       const SizedBox(height: 18),
       GelButton(label: 'Reset appearance', icon: Icons.restart_alt_rounded, primary: false,
         onPressed: () {
           state.resetAppearance();
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Forest glass restored.')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Forest sanctuary restored.')));
         }),
     ])));
 

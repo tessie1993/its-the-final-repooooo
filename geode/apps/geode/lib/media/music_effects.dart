@@ -2,49 +2,43 @@ part of 'music_controller.dart';
 
 extension _MusicEffects on MusicController {
   Future<void> _initializeEqualizer() async {
-    if (_equalizer == null || _eqInitializing || _eqParameters != null || _disposed) return;
+    if (!_player.usesNative || _eqInitializing || equalizerAvailable || _disposed) return;
     _eqInitializing = true;
     try {
-      final parameters = await _equalizer!.parameters.timeout(const Duration(seconds: 3));
+      const frequencies = <double>[31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+      final gains = List<double>.generate(frequencies.length, (i) =>
+        i < _savedEqGains.length ? _savedEqGains[i].clamp(-15.0, 15.0).toDouble() : 0);
+      await _player.setEqualizer(enabled: _savedEqEnabled, bands: gains);
       if (_disposed) return;
-      _eqParameters = parameters;
-      eqMinGain = parameters.minDecibels;
-      eqMaxGain = parameters.maxDecibels;
-      eqFrequencies = List.unmodifiable(parameters.bands.map((band) => band.centerFrequency));
-      for (var i = 0; i < parameters.bands.length && i < _savedEqGains.length; i++) {
-        if (_disposed) return;
-        await parameters.bands[i].setGain(_savedEqGains[i].clamp(eqMinGain, eqMaxGain).toDouble());
-      }
-      if (_disposed) return;
-      await _equalizer!.setEnabled(_savedEqEnabled);
-      if (_disposed) return;
-      equalizerAvailable = parameters.bands.isNotEmpty;
-      equalizerEnabled = _equalizer!.enabled;
-      eqGains = List.unmodifiable(parameters.bands.map((band) => band.gain));
+      eqMinGain = -15;
+      eqMaxGain = 15;
+      eqFrequencies = frequencies;
+      eqGains = List.unmodifiable(gains);
+      equalizerAvailable = true;
+      equalizerEnabled = _savedEqEnabled;
       _notify();
     } catch (_) {
-      // No pretend EQ: unavailable devices retain a disabled UI.
       equalizerAvailable = false;
       equalizerEnabled = false;
-      _eqParameters = null;
       _notify();
     } finally { _eqInitializing = false; }
   }
 
   Future<void> _setEqualizerEnabled(bool value) => _serial(() async {
-    if (!equalizerAvailable || _equalizer == null) return;
-    await _equalizer!.setEnabled(value);
-    equalizerEnabled = _equalizer!.enabled;
-    _savedEqEnabled = equalizerEnabled;
+    if (!equalizerAvailable) return;
+    await _player.setEqualizer(enabled: value, bands: eqGains);
+    equalizerEnabled = value;
+    _savedEqEnabled = value;
     _changed();
   });
 
   Future<void> _setEqGain(int index, double value) => _serial(() async {
-    final parameters = _eqParameters;
-    if (!equalizerAvailable || parameters == null || index < 0 || index >= parameters.bands.length) return;
-    await parameters.bands[index].setGain(value.clamp(eqMinGain, eqMaxGain).toDouble());
-    eqGains = List.unmodifiable(parameters.bands.map((band) => band.gain));
-    _savedEqGains = List.of(eqGains);
+    if (!equalizerAvailable || index < 0 || index >= eqGains.length) return;
+    final gains = List<double>.of(eqGains);
+    gains[index] = value.clamp(eqMinGain, eqMaxGain).toDouble();
+    await _player.setEqualizer(enabled: equalizerEnabled, bands: gains);
+    eqGains = List.unmodifiable(gains);
+    _savedEqGains = gains;
     _changed();
   });
 

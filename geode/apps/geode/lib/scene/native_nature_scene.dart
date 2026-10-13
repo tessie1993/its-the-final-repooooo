@@ -35,6 +35,7 @@ class NativeNatureScene {
   final _crystals = fs.Node(name: 'Quartz cluster');
   final _jade = fs.Node(name: 'Polished jade');
   final _dew = <fs.Node>[];
+  final _lenses = <fs.Node>[];
   final _quartz = fs.PhysicallyBasedMaterial()
     ..roughnessFactor = .13
     ..metallicFactor = .03
@@ -60,6 +61,17 @@ class NativeNatureScene {
     ..ior = 1.333
     ..thickness = .14
     ..clearcoat = 1;
+  final _lensMaterial = fs.PhysicallyBasedMaterial()
+    ..baseColorFactor = vm.Vector4(.42, .78, .94, 1)
+    ..roughnessFactor = .09
+    ..metallicFactor = .025
+    ..transmission = .68
+    ..ior = 1.333
+    ..thickness = .22
+    ..clearcoat = 1
+    ..clearcoatRoughness = .06
+    ..iridescence = .18
+    ..emissiveFactor = vm.Vector4(.015, .045, .055, 1);
   double _lastHue = -1;
   double _lastMaterial = -1;
   bool failed = false;
@@ -94,6 +106,13 @@ class NativeNatureScene {
       _dew.add(node);
       scene.add(node);
     }
+    final lensMesh = fs.Mesh(
+      fs.SphereGeometry(radius: .16, segments: 28, rings: 18), _lensMaterial);
+    for (var i = 0; i < 4; i++) {
+      final node = fs.Node(name: 'Floating glass pebble ${i + 1}', mesh: lensMesh);
+      _lenses.add(node);
+      scene.add(node);
+    }
     scene..add(_crystals)..add(_jade);
   }
 
@@ -101,7 +120,7 @@ class NativeNatureScene {
     final t = controller.effectiveReducedMotion ? 0.0 : controller.time;
     final tilt = controller.effectiveReducedMotion ? Offset.zero : controller.tilt;
     final wake = controller.effectiveReducedMotion ? 0.0 : controller.pulse;
-    _crystals.updateTransform((matrix) => matrix
+    _crystals.mutateLocalTransform((matrix) => matrix
       ..setIdentity()
       ..translateByDouble(1.52 + tilt.dx * .05,
           1.28 + math.sin(t * .38) * .035 - tilt.dy * .04, .1, 1)
@@ -109,7 +128,7 @@ class NativeNatureScene {
       ..rotateY(-.35 + math.sin(t * .21) * .12 + tilt.dx * .035)
       ..rotateZ(-.23 + wake * .025)
       ..scaleByDouble(.80, .80, .80, 1));
-    _jade.updateTransform((matrix) => matrix
+    _jade.mutateLocalTransform((matrix) => matrix
       ..setIdentity()
       ..translateByDouble(-1.70 + tilt.dx * .045,
           -.90 + math.sin(t * .42 + 1) * .045 - tilt.dy * .045, -.12, 1)
@@ -123,6 +142,19 @@ class NativeNatureScene {
         (i == 0 ? 2.02 : (i == 1 ? -.2 : .55)) + math.sin(t * .45 + phase) * .055,
         -.35 + math.cos(t * .22 + phase) * .08,
       );
+    }
+    for (var i = 0; i < _lenses.length; i++) {
+      final side = i.isEven ? -1.0 : 1.0;
+      final phase = i * 1.8;
+      _lenses[i].mutateLocalTransform((matrix) => matrix
+        ..setIdentity()
+        ..translateByDouble(side * (1.45 + i * .05) + tilt.dx * .06,
+          1.50 - i * .78 + math.sin(t * .42 + phase) * .055,
+          .2 + math.sin(t * .20 + phase) * .08, 1)
+        ..rotateX(.14 + tilt.dy * .05)
+        ..rotateY(side * .35 + math.sin(t * .19 + phase) * .12)
+        ..rotateZ(side * .12)
+        ..scaleByDouble(1.8, .85, .72, 1));
     }
     _updateMaterials(controller);
     scene.renderScale = controller.highQuality ? .85 : .65;

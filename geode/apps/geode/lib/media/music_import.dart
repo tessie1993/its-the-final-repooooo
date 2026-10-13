@@ -33,9 +33,20 @@ extension _MusicImport on MusicController {
           await partial.rename(destination.path);
           if (_disposed) { await destination.delete(); break; }
           final filename = picked.name.replaceAll(RegExp(r'\.[^.]+$'), '').trim();
+          Map<String, dynamic> tags = const {};
+          try { tags = await _player.readTags(destination.path); }
+          catch (_) { /* A missing tag never makes playable audio unimportable. */ }
+          if (_disposed) { await destination.delete(); break; }
+          String label(String key, String fallback) {
+            final value = tags[key];
+            return value is String && value.trim().isNotEmpty ? value.trim() : fallback;
+          }
           _tracks.add(MusicTrack(
             id: id, path: destination.path,
-            title: filename.isEmpty ? 'Untitled track' : filename,
+            title: label('title', filename.isEmpty ? 'Untitled track' : filename),
+            artist: label('artist', 'Unknown artist'),
+            album: label('album', 'Unknown album'),
+            durationMs: (tags['durationMs'] as num?)?.toInt() ?? 0,
             addedAt: DateTime.now().millisecondsSinceEpoch,
             sizeBytes: size,
           ));

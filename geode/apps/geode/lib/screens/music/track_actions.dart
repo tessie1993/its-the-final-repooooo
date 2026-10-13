@@ -21,7 +21,8 @@ class MusicTrackTile extends StatelessWidget {
     return Padding(padding: const EdgeInsets.symmetric(vertical: 4),
       child: GelFloat(controller: state.scene, anchor: const Offset(.5, .6),
         weight: 3.2, phase: (track.id.hashCode % 10).toDouble(),
-        child: GelPanel(radius: 21, opacity: current ? .73 : .4, blur: 6,
+        child: GelPanel(radius: 32, opacity: current ? .78 : .48, blur: 6,
+          pearl: true, highlighted: current,
           padding: const EdgeInsets.symmetric(horizontal: 6), child: ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       leading: Stack(alignment: Alignment.center, children: [

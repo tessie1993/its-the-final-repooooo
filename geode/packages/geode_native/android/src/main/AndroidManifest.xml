@@ -1,3 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   package="dev.geode.geode_native">
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+  <uses-permission android:name="android.permission.WAKE_LOCK" />
+  <application>
+    <service
+      android:name="dev.geode.geode_native.GeodePlaybackService"
+      android:exported="false"
+      android:foregroundServiceType="mediaPlayback"
+      android:stopWithTask="false" />
+  </application>
 </manifest>

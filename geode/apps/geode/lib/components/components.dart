@@ -7,3 +7,4 @@ export 'gel_slider.dart';
 export 'material_orb.dart';
 export 'nature_pebble.dart';
 export 'scene_thumbnail.dart';
+export 'fern_sprig.dart';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geode_engine/geode_engine.dart';
 import '../state/geode_app_state.dart';
 import 'scene_surface.dart';
 
@@ -39,15 +40,19 @@ class _SceneHostState extends State<SceneHost> {
         onPointerCancel: (event) => _release(event.pointer),
         child: Stack(fit: StackFit.expand, children: [
           SceneSurface(controller: state.scene, interactive: false,
-            enableNativeScene: state.enableDeviceServices,
+            enableNativeScene: state.enableDeviceServices && state.natureDetails && !state.nativeVisuals.enabled,
             orbAlignment: state.immersive ? Alignment.center
               : (wide ? const Alignment(-.40, -.08) : const Alignment(0, -.15)),
             orbScale: wide ? .8 : .96),
+          ListenableBuilder(listenable: state.nativeVisuals, builder: (context, _) =>
+            state.nativeVisuals.enabled
+              ? NativeVisualizerTexture(controller: state.nativeVisuals)
+              : const SizedBox.expand()),
           const IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(
             gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
               colors: [Color(0x57000000), Colors.transparent, Color(0xCC031F25)], stops: [0, .4, 1])))),
           if (state.destination != 0)
-            const IgnorePointer(child: ColoredBox(color: Color(0x80102428))),
+            const IgnorePointer(child: ColoredBox(color: Color(0x4D102438))),
           MediaQuery(data: MediaQuery.of(context).copyWith(disableAnimations:
             MediaQuery.disableAnimationsOf(context) || state.scene.reducedMotion), child: child!),
         ]));

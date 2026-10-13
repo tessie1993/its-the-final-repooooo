@@ -12,10 +12,8 @@ import 'native_nature_layer.dart';
 export 'geode_scene_controller.dart';
 export 'gel_float.dart';
 
-/// A photographic environment plus a true raymarched 3D glass sculpture.
-///
-/// The shader uses screen-space environment refraction and Fresnel reflection;
-/// it is a designed liquid material, not a full fluid-volume simulation.
+/// A woodland lake with solid, raymarched moss, stone and bark sculptures.
+/// Directional daylight, mineral grain and touch ripples share a bounded clock.
 class SceneSurface extends StatefulWidget {
   const SceneSurface({
     super.key,
@@ -70,7 +68,7 @@ class _SceneSurfaceState extends State<SceneSurface>
       } finally {
         codec.dispose();
       }
-      final program = await ui.FragmentProgram.fromAsset('shaders/liquid_glass.frag');
+      final program = await ui.FragmentProgram.fromAsset('shaders/nature_stone.frag');
       shader = program.fragmentShader();
       shader.setImageSampler(0, image);
       if (!mounted) {
@@ -100,7 +98,7 @@ class _SceneSurfaceState extends State<SceneSurface>
   void didChangeDependencies() {
     super.didChangeDependencies();
     _systemReducedMotion = MediaQuery.disableAnimationsOf(context);
-    _tickerModeEnabled = TickerMode.of(context);
+    _tickerModeEnabled = TickerMode.valuesOf(context).enabled;
     // Defer notifications until inherited-widget propagation has completed.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) widget.controller.setSystemReducedMotion(_systemReducedMotion);

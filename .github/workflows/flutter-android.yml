@@ -8,7 +8,7 @@ on:
       - '.gitmodules'
       - '.github/workflows/flutter-android.yml'
   push:
-    branches: [main, 'codex/**']
+    branches: [main]
     paths:
       - 'geode/**'
       - '.gitmodules'
@@ -39,8 +39,8 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
-      - name: Download pub.dev libraries
-        run: flutter pub get
+      - name: Download locked pub.dev libraries
+        run: flutter pub get --enforce-lockfile
       - name: Save resolved dependency lock
         uses: actions/upload-artifact@v4
         with:
@@ -69,8 +69,6 @@ jobs:
         working-directory: geode/apps/geode
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -81,6 +79,14 @@ jobs:
           channel: stable
           cache: true
       - uses: gradle/actions/setup-gradle@v4
+      # Validate the application's Gradle wrapper before checking out C++
+      # dependencies. Oboe's example wrappers are never executed by this app.
+      - name: Download pinned C++ dependencies
+        working-directory: .
+        run: git submodule update --init --recursive
+      - name: Verify original non-Kotlin source import
+        working-directory: .
+        run: python3 geode/tools/verify_source_import.py
       - name: Install Android SDK, NDK and CMake
         shell: bash
         run: |
@@ -89,8 +95,8 @@ jobs:
           sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
           yes | "$sdkmanager" --licenses >/dev/null || true
           "$sdkmanager" 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.0.13004108' 'cmake;3.22.1'
-      - name: Download pub.dev libraries
-        run: flutter pub get
+      - name: Download locked pub.dev libraries
+        run: flutter pub get --enforce-lockfile
       - name: Build debug APK with C++ audio, analysis and visuals
         run: flutter build apk --debug --no-pub --target-platform android-arm64,android-x64
       - name: Check native libraries and package checksum
@@ -102,6 +108,8 @@ jobs:
             unzip -l "$apk" "lib/$abi/libgeode.so" | grep "lib/$abi/libgeode.so"
           done
           sha256sum "$apk" > "$apk.sha256"
+      - name: Android lint
+        run: cd android && ./gradlew :app:lintDebug --stacktrace --no-daemon
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -111,8 +119,6 @@ jobs:
             geode/apps/geode/build/app/outputs/flutter-apk/app-debug.apk.sha256
           if-no-files-found: error
           retention-days: 7
-      - name: Android lint
-        run: cd android && ./gradlew :app:lintDebug --stacktrace --no-daemon
       - name: Upload build and lint reports
         if: failure()
         uses: actions/upload-artifact@v4

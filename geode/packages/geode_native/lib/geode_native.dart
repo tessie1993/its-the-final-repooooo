@@ -6,6 +6,7 @@ import 'dart:ffi';
 import 'src/geode_api.g.dart';
 
 export 'src/geode_api.g.dart';
+export 'src/native_platform.dart';
 
 /// The process-wide binding to libgeode.so.
 ///
