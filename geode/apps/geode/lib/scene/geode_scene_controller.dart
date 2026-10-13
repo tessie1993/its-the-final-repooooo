@@ -23,6 +23,9 @@ class GelRipple {
 class GeodeSceneController extends ChangeNotifier {
   double _time = 0;
   double _energy = .42;
+  double _hue = .5;
+  double _particleDensity = .6;
+  double _rippleStrength = .65;
   double _displayEnergy = .42;
   int _materialIndex = 0;
   double _displayMaterial = 0;
@@ -48,6 +51,9 @@ class GeodeSceneController extends ChangeNotifier {
 
   double get time => _time;
   double get energy => _energy;
+  double get hue => _hue;
+  double get particleDensity => _particleDensity;
+  double get rippleStrength => _rippleStrength;
   double get displayEnergy => _displayEnergy;
   int get materialIndex => _materialIndex;
   double get displayMaterial => _displayMaterial;
@@ -112,6 +118,22 @@ class GeodeSceneController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setHue(double value) {
+    if (_disposed || !value.isFinite) return;
+    _hue = value.clamp(0.0, 1.0).toDouble();
+    notifyListeners();
+  }
+  void setParticleDensity(double value) {
+    if (_disposed || !value.isFinite) return;
+    _particleDensity = value.clamp(0.0, 1.0).toDouble();
+    notifyListeners();
+  }
+  void setRippleStrength(double value) {
+    if (_disposed || !value.isFinite) return;
+    _rippleStrength = value.clamp(0.0, 1.0).toDouble();
+    notifyListeners();
+  }
+
   void setEnergy(double value) {
     if (_disposed || !value.isFinite) return;
     _energy = value.clamp(0.0, 1.0).toDouble();
@@ -168,12 +190,13 @@ class GeodeSceneController extends ChangeNotifier {
   }
 
   void _addRipple(Offset position, double strength) {
+    if (_rippleStrength == 0) return;
     _ripples.removeWhere((ripple) => _time - ripple.startedAt > 3.8);
     if (_ripples.length >= 4) _ripples.removeAt(0);
     _ripples.add(GelRipple(
       position: position,
       startedAt: _time,
-      strength: strength,
+      strength: strength * _rippleStrength / .65,
     ));
     _lastWakeTime = _time;
     _lastWakePosition = position;

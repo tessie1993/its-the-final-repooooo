@@ -7,11 +7,11 @@ class GelNavDock extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onChanged;
 
-  static const labels = ['Visuals', 'Library', 'Studio', 'Settings'];
+  static const labels = ['Visuals', 'Music', 'Studio', 'Settings'];
   static const icons = [
     Icons.blur_on_rounded,
-    Icons.grid_view_rounded,
-    Icons.tune_rounded,
+    Icons.library_music_outlined,
+    Icons.movie_outlined,
     Icons.settings_outlined,
   ];
 

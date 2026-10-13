@@ -17,6 +17,7 @@ uniform vec4 uTouch0;        // 15..18: normalized x/y, age seconds, strength
 uniform vec4 uTouch1;        // 19..22
 uniform vec4 uTouch2;        // 23..26
 uniform vec4 uTouch3;        // 27..30
+uniform float uHue;         // 31: centered hue rotation, .5 is neutral
 uniform sampler2D uEnvironment; // sampler slot 0
 
 out vec4 fragColor;
@@ -121,7 +122,7 @@ vec3 glassSurface(vec3 position, vec3 normal, vec2 uv) {
   reflected *= vec3(.82, 1.07, 1.15);
   vec3 water = mix(transmitted, reflected, fresnel * .75 + .09);
   // A broad upper-left softbox and a fine secondary rim give the object volume.
-  vec3 light = normalize(vec3(-.55, .85, 1.20));
+  vec3 light = normalize(vec3(-.55 + sin(uTime * .13) * .06, .85, 1.20));
   float key = pow(max(dot(reflection, light), 0.0), 55.0);
   float sheen = pow(max(dot(normal, normalize(vec3(-.5, .72, .26))), 0.0), 24.0);
   float rim = pow(1.0 - facing, 2.4);
@@ -137,7 +138,12 @@ vec3 glassSurface(vec3 position, vec3 normal, vec2 uv) {
   silver = mix(silver, vec3(.86, .96, 1.0), rim * rimLight * .60);
   vec3 material = mix(water, opal, clamp(uMaterial, 0.0, 1.0));
   material = mix(material, silver, clamp(uMaterial - 1.0, 0.0, 1.0));
-  return material;
+  // Restrained spectral tint leaves photographic reflection legible.
+  vec3 axis = vec3(.577350269);
+  float angle = (uHue - .5) * 6.283185307;
+  vec3 rotated = material * cos(angle) + cross(axis, material) * sin(angle) +
+                 axis * dot(axis, material) * (1.0 - cos(angle));
+  return mix(material, max(rotated, vec3(0.0)), .58);
 }
 
 void main() {

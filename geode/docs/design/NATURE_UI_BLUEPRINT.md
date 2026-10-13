@@ -8,27 +8,28 @@ The photographic components are real app assets, not pictures of a proposed UI.
 
 | Destination | Working UI in this step | Connection still required |
 | --- | --- | --- |
-| Visuals | Raymarched glass sculpture, local touch refraction, material/energy controls, pause, immersive view | Native music-driven visualizer surface |
-| Library | Nature looks, favorites, search, selectable presets, empty states | Device audio library and persistent preset store |
-| Studio | Material and energy editor, detail/particle controls, named session saves | Existing multi-lane timeline, native media/export services |
-| Settings | Reduced motion, material quality, particles, nature accents, reset | Persistent app preferences and audio settings |
+| Visuals | Raymarched glass sculpture, presets, material/motion/palette editor, particle controls, immersive view | Native audio-reactive surface |
+| Music | Local audio import/playback, six collection views, playlists, queue, lyrics, speed/pitch/EQ controls | Existing native audio engine host |
+| Studio | Five-lane project editor, clip properties, markers/keyframes, undo/redo, project JSON export | Native media preview/composition and video export |
+| Settings | Persisted appearance, comfort/haptic controls, audio settings, local collection status | Native wallpaper integration |
 
-No UI action claims to play music, import tracks, or export video. Those services
-are described by `PORTING.md`, but their Flutter contracts are not implemented in
-this checkout. Saved looks and preferences are explicitly session-only.
+The music controller uses just_audio and copies imported tracks into private app
+storage. Project, look and appearance data use versioned Flutter namespaces;
+legacy native stores remain untouched. Native render output is clearly marked
+unavailable. Dependencies need `flutter pub get` on a working SDK.
 
 ## File and component boundaries
 
 | Files | Responsibility |
 | --- | --- |
 | `apps/geode/lib/main.dart`, `app.dart` | Bootstrap, four destinations, global pointer coordinates, safe areas, back/immersive behavior |
-| `lib/state/geode_app_state.dart` | In-memory screen state, presets and preferences; never listens to every frame |
+| `lib/state/geode_app_state.dart` | Persisted screen state, presets and preferences; never listens to every frame |
 | `lib/scene/geode_scene_controller.dart` | Shared spring state, local touch waves, bounded displacement, preferences |
 | `lib/scene/scene_surface.dart` | Single lifecycle-aware ticker, asset/shader resources, rendering and fallback |
-| `lib/scene/gel_float.dart` | Translate reusable controls using an isolated child, up to six logical pixels |
+| `lib/scene/gel_float.dart` | Translate and tilt reusable controls using an isolated child, up to six logical pixels |
 | `shaders/liquid_glass.frag` | SDF sculpture, environment transmission/reflection, touch refraction and water rings |
 | `lib/components/` | Photographic pebble buttons, dew controls, glass panels, materials, slider, dock, thumbnails |
-| `lib/screens/` | Visuals, Library, Studio and Settings compositions |
+| `lib/screens/` | Visuals, Music, Studio and Settings compositions |
 | `lib/theme/geode_theme.dart` | Ice, forest and mint colors, typography, targets and Flutter theme |
 
 Dependency order: assets and theme → scene controller/shader and components →
@@ -54,7 +55,7 @@ with the built-in image generator for this step. No external runtime image URLs.
 
 ## Touch, motion and FX
 
-One pointer Listener surrounds the entire shell. Touching a control also excites
+One pointer Listener surrounds the Navigator and the shared scene. Touching a control also excites
 the gel. A maximum of four impulses is retained. Drag wakes are rate-limited.
 Waves travel from the actual touch location and attenuate with distance and time.
 Components apply delayed radial displacement weighted by apparent mass.
@@ -100,14 +101,14 @@ flutter run
 ```
 
 The existing scaffold smoke test was updated to exercise real navigation, the
-empty search result, and reduced-motion control. No passing run is claimed:
+music destination and reduced-motion control. No passing run is claimed:
 Flutter/Dart sources and the matching SDK were obtained in this environment,
 but Dart VM startup aborts with `Failed to retrieve stack bounds` before running
 analysis, tests or builds. Device frame rate, shader compatibility, text scaling
 and final rendered layout therefore still require verification on a working SDK.
 
-Static checks completed: all 22 Dart source/test files parse without syntax errors;
-all four asset/shader references resolve; the 31 float uniform slots and one image
+Static checks completed: all 60 Dart source/test files parse without syntax errors;
+all image/shader references resolve; the 32 float uniform slots and one image
 sampler match the Dart renderer; whitespace checks pass. These do not establish
 type correctness, successful shader compilation, visual layout or device performance.
 

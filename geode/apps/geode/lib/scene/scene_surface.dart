@@ -254,6 +254,7 @@ class _ScenePainter extends CustomPainter {
           values.addAll([0, 0, 10, 0]);
         }
       }
+      values.add(controller.hue); // Float slot 31.
       for (var i = 0; i < values.length; i += 1) {
         activeShader.setFloat(i, values[i]);
       }
@@ -347,6 +348,10 @@ class _ScenePainter extends CustomPainter {
       Color.lerp(water[i], opal[i], material.clamp(0.0, 1.0).toDouble()),
       mercury[i], (material - 1).clamp(0.0, 1.0).toDouble(),
     )!);
+    if ((controller.hue - .5).abs() > .005) {
+      final tint = HSVColor.fromAHSV(.18, (controller.hue * 360 + 180) % 360, .55, .95).toColor();
+      for (var i = 0; i < colors.length; i++) { colors[i] = Color.alphaBlend(tint, colors[i]); }
+    }
     canvas.drawPath(shape, Paint()
       ..shader = RadialGradient(center: const Alignment(-.38, -.5),
           radius: 1.02, colors: colors, stops: const [0, .45, .81, 1]).createShader(orb));
@@ -371,21 +376,40 @@ class _ScenePainter extends CustomPainter {
   void _paintParticles(Canvas canvas, Size size) {
     final t = reduced ? 0.0 : controller.time;
     final paint = Paint();
-    // Seeded analytic motes: stable across rebuilds, with no per-frame RNG.
-    for (var i = 0; i < 25; i += 1) {
+    // Three depth bands: far mist specks, mid-field dew, near luminous bokeh.
+    // Deterministic trajectories keep particles stable across navigation.
+    final count = (controller.particleDensity * (controller.highQuality ? 84 : 36)).round();
+    for (var i = 0; i < count; i += 1) {
       final seed = i * 2.3999632297;
-      final x = (.5 + math.sin(seed * 2.2) * .46) * size.width;
-      final y = ((i * .173 + .13 - t * (.002 + (i % 4) * .0004)) % 1.0) * size.height;
-      final drift = math.sin(t * .24 + seed) * 8;
-      final opacity = (.06 + .09 * (math.sin(seed + t * .45) * .5 + .5));
-      paint.color = const Color(0xFFE0FAFF).withValues(alpha: opacity);
-      canvas.drawCircle(Offset(x + drift, y), i % 5 == 0 ? 1.8 : .8, paint);
+      final depth = (i % 3 + 1) / 3.0;
+      final x = (.5 + math.sin(seed * 2.2) * .48) * size.width;
+      final y = ((i * .173 + .13 - t * (.0012 + depth * .002)) % 1.0) * size.height;
+      final drift = math.sin(t * (.14 + depth * .1) + seed) * (3 + depth * 11);
+      final parallax = controller.tilt * (depth * 9);
+      final point = Offset(x + drift, y) + parallax;
+      final glint = math.pow(math.max(0.0, math.sin(seed + t * .65)), 12).toDouble();
+      final opacity = .035 + depth * .08 + glint * .15;
+      final radius = .55 + depth * 1.1;
+      if (depth > .9 && controller.highQuality) {
+        paint..color = const Color(0xFFAEEEF6).withValues(alpha: opacity * .2)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+        canvas.drawCircle(point, radius * 2.4, paint);
+      }
+      paint..maskFilter = null
+        ..color = const Color(0xFFE0FAFF).withValues(alpha: opacity);
+      canvas.drawCircle(point, radius, paint);
+      if (glint > .65 && depth > .5) {
+        paint..strokeWidth = .5..color = Colors.white.withValues(alpha: glint * .22);
+        canvas.drawLine(point - const Offset(3.5, 0), point + const Offset(3.5, 0), paint);
+        canvas.drawLine(point - const Offset(0, 3.5), point + const Offset(0, 3.5), paint);
+      }
     }
+    if (controller.particleDensity == 0) return;
     if (reduced || controller.burstAge > 2.4) return;
     final age = controller.burstAge;
     final center = Offset(controller.burstPosition.dx * size.width, controller.burstPosition.dy * size.height);
     final scale = size.shortestSide * orbScale;
-    for (var i = 0; i < 18; i += 1) {
+    for (var i = 0; i < (controller.particleDensity * 26).ceil(); i += 1) {
       final angle = i * 2.3999632297;
       final speed = .12 + (i % 5) * .022;
       final x = math.cos(angle) * scale * (.015 + age * speed);
