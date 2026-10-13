@@ -25,5 +25,7 @@ final class NativeBindings {
     static native String scenes(long handle);
     static native void touch(long handle, float x, float y, float dx, float dy, float dt, float strength);
     static native java.util.Map<String, Object> readTags(int fd);
+    static native void inputRate(long handle, int sampleRate);
+    static native void inputPcm(long handle, float[] mono, int count);
     static native void equalizer(long handle, float[] config);
 }

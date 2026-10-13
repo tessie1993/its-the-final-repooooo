@@ -33,8 +33,7 @@ extension _MusicCatalogue on MusicController {
     final index = _playlists.indexWhere((playlist) => playlist.id == id);
     if (index < 0) return;
     final ids = List<String>.of(_playlists[index].trackIds);
-    if (oldIndex < 0 || oldIndex >= ids.length || newIndex < 0 || newIndex > ids.length) return;
-    if (newIndex > oldIndex) newIndex--;
+    if (oldIndex < 0 || oldIndex >= ids.length || newIndex < 0 || newIndex >= ids.length) return;
     final track = ids.removeAt(oldIndex);
     ids.insert(newIndex, track);
     _playlists[index] = _playlists[index].copyWith(trackIds: ids);
@@ -66,6 +65,7 @@ extension _MusicCatalogue on MusicController {
       _playlists[index] = playlist.copyWith(trackIds: playlist.trackIds.where((item) => item != id).toList());
     }
     queueIndex = _queue.isEmpty ? -1 : (oldIndex - removedBefore).clamp(0, _queue.length - 1).toInt();
+    _shuffleOrder.reset(_queue.length, queueIndex);
     if (removedCurrent) {
       _resumePositionMs = 0;
       await _loadCurrent(autoplay: wasPlaying);

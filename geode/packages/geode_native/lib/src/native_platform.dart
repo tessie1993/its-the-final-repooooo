@@ -51,38 +51,35 @@ class NativeMediaAction {
 /// and publishes only the 237-float feature frame to Flutter.
 class GeodeNative {
   GeodeNative({
-    MethodChannel channel = const MethodChannel('geode_native'),
-    EventChannel playbackChannel = const EventChannel('geode_native/playback'),
-    EventChannel featureChannel = const EventChannel('geode_native/features'),
-    EventChannel mediaChannel = const EventChannel('geode_native/media_actions'),
-  }) : _channel = channel,
-       _playbackChannel = playbackChannel,
-       _featureChannel = featureChannel,
-       _mediaChannel = mediaChannel;
+    this.channel = const MethodChannel('geode_native'),
+    this.playbackChannel = const EventChannel('geode_native/playback'),
+    this.featureChannel = const EventChannel('geode_native/features'),
+    this.mediaChannel = const EventChannel('geode_native/media_actions'),
+  });
 
   static final GeodeNative instance = GeodeNative();
   static const equalizerFrequencies = <double>[
     31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000,
   ];
 
-  final MethodChannel _channel;
-  final EventChannel _playbackChannel;
-  final EventChannel _featureChannel;
-  final EventChannel _mediaChannel;
+  final MethodChannel channel;
+  final EventChannel playbackChannel;
+  final EventChannel featureChannel;
+  final EventChannel mediaChannel;
 
-  late final Stream<NativePlaybackSnapshot> snapshots = _playbackChannel
+  late final Stream<NativePlaybackSnapshot> snapshots = playbackChannel
       .receiveBroadcastStream()
       .map((event) => NativePlaybackSnapshot.fromMap(event as Map<Object?, Object?>));
 
   /// Struct order is defined in core/api/geode_api.h: 33 scalar fields,
   /// 64 spectrum bands, 128 waveform points, then 12 chroma bins.
-  late final Stream<Float32List> features = _featureChannel
+  late final Stream<Float32List> features = featureChannel
       .receiveBroadcastStream()
       .map((event) => event is Float32List
           ? event
           : Float32List.fromList((event as List<Object?>).cast<num>().map((n) => n.toDouble()).toList()));
 
-  late final Stream<NativeMediaAction> mediaActions = _mediaChannel
+  late final Stream<NativeMediaAction> mediaActions = mediaChannel
       .receiveBroadcastStream()
       .map((event) {
         final values = event as Map<Object?, Object?>;
@@ -92,41 +89,43 @@ class GeodeNative {
         );
       });
 
-  Future<void> initialize() => _channel.invokeMethod<void>('initialize');
+  Future<void> initialize() => channel.invokeMethod<void>('initialize');
   Future<void> open(String uri, {required int token}) =>
-      _channel.invokeMethod<void>('open', {'uri': uri, 'token': token});
+      channel.invokeMethod<void>('open', {'uri': uri, 'token': token});
   Future<void> setNext(String? uri, {int token = -1}) =>
-      _channel.invokeMethod<void>('setNext', {'uri': uri, 'token': token});
-  Future<void> play() => _channel.invokeMethod<void>('play');
-  Future<void> pause() => _channel.invokeMethod<void>('pause');
-  Future<void> stop() => _channel.invokeMethod<void>('stop');
+      channel.invokeMethod<void>('setNext', {'uri': uri, 'token': token});
+  Future<void> play() => channel.invokeMethod<void>('play');
+  Future<void> pause() => channel.invokeMethod<void>('pause');
+  Future<void> stop() => channel.invokeMethod<void>('stop');
   Future<void> seek(Duration position) =>
-      _channel.invokeMethod<void>('seek', {'positionMs': position.inMilliseconds});
+      channel.invokeMethod<void>('seek', {'positionMs': position.inMilliseconds});
   Future<void> setVolume(double volume) =>
-      _channel.invokeMethod<void>('setVolume', {'volume': volume.clamp(0, 1)});
+      channel.invokeMethod<void>('setVolume', {'volume': volume.clamp(0, 1)});
   Future<void> setCrossfade(Duration duration, {int curve = 1}) =>
-      _channel.invokeMethod<void>('setCrossfade', {'durationMs': duration.inMilliseconds, 'curve': curve});
+      channel.invokeMethod<void>('setCrossfade', {'durationMs': duration.inMilliseconds, 'curve': curve});
   Future<NativePlaybackSnapshot> snapshot() async => NativePlaybackSnapshot.fromMap(
-      (await _channel.invokeMapMethod<Object?, Object?>('snapshot'))!);
+      (await channel.invokeMapMethod<Object?, Object?>('snapshot'))!);
   Future<int> createTexture({int width = 720, int height = 1280}) async =>
-      (await _channel.invokeMethod<int>('createTexture', {'width': width, 'height': height}))!;
-  Future<void> disposeTexture() => _channel.invokeMethod<void>('disposeTexture');
-  Future<void> setScene(String id) => _channel.invokeMethod<void>('setScene', {'id': id});
+      (await channel.invokeMethod<int>('createTexture', {'width': width, 'height': height}))!;
+  Future<void> disposeTexture() => channel.invokeMethod<void>('disposeTexture');
+  Future<void> setAudioSource(String source) =>
+      channel.invokeMethod<void>('setAudioSource', {'source': source});
+  Future<void> setScene(String id) => channel.invokeMethod<void>('setScene', {'id': id});
   Future<void> setParam(String name, double value) =>
-      _channel.invokeMethod<void>('setParam', {'name': name, 'value': value});
+      channel.invokeMethod<void>('setParam', {'name': name, 'value': value});
   Future<void> setReducedMotion(bool enabled) =>
-      _channel.invokeMethod<void>('setReducedMotion', {'enabled': enabled});
+      channel.invokeMethod<void>('setReducedMotion', {'enabled': enabled});
   Future<void> setPaused(bool paused) =>
-      _channel.invokeMethod<void>('setPaused', {'paused': paused});
+      channel.invokeMethod<void>('setPaused', {'paused': paused});
   Future<void> setVisualizerPaused(bool paused) => setPaused(paused);
   Future<List<String>> listScenes() async =>
-      (await _channel.invokeListMethod<String>('listScenes')) ?? const [];
+      (await channel.invokeListMethod<String>('listScenes')) ?? const [];
   Future<List<String>> listMilkPresets() async =>
-      (await _channel.invokeListMethod<String>('listMilkPresets')) ?? const [];
+      (await channel.invokeListMethod<String>('listMilkPresets')) ?? const [];
   Future<void> loadMilkPreset(String name) =>
-      _channel.invokeMethod<void>('loadMilkPreset', {'name': name});
+      channel.invokeMethod<void>('loadMilkPreset', {'name': name});
   Future<void> touch({required double x, required double y, double dx = 0, double dy = 0,
-    double dt = 0.016, double strength = 1}) => _channel.invokeMethod<void>('touch', {
+    double dt = 0.016, double strength = 1}) => channel.invokeMethod<void>('touch', {
       'x': x.clamp(0, 1), 'y': y.clamp(0, 1), 'dx': dx, 'dy': dy,
       'dt': dt.clamp(0.001, 1), 'strength': strength.clamp(0, 2),
     });
@@ -134,14 +133,26 @@ class GeodeNative {
     double bassBoost = 0, double loudnessDb = 0, double gainDb = 0,
     bool crossfeed = false, bool limiter = true}) {
     if (bands.length != 10) throw ArgumentError.value(bands.length, 'bands', 'Expected ten EQ bands');
-    return _channel.invokeMethod<void>('setEqualizer', {
+    return channel.invokeMethod<void>('setEqualizer', {
       'enabled': enabled, 'bands': bands, 'bassBoost': bassBoost.clamp(0, 1),
       'loudnessDb': loudnessDb.clamp(0, 10), 'gainDb': gainDb.clamp(-30, 15),
       'crossfeed': crossfeed, 'limiter': limiter,
     });
   }
   Future<Map<String, Object?>> readTags(String uri) async =>
-      (await _channel.invokeMapMethod<String, Object?>('readTags', {'uri': uri})) ?? const {};
+      (await channel.invokeMapMethod<String, Object?>('readTags', {'uri': uri})) ?? const {};
   Future<void> publishPlaybackState(Map<String, Object?> state) =>
-      _channel.invokeMethod<void>('publishPlaybackState', state);
+      channel.invokeMethod<void>('publishPlaybackState', state);
+
+  /// Opens Android's live wallpaper preview for the currently selected scene.
+  Future<void> setWallpaper() => _channel.invokeMethod<void>('setWallpaper');
+
+  /// Opens Android's screensaver picker; the user selects Geode there.
+  Future<void> openScreensaverSettings() =>
+      _channel.invokeMethod<void>('openScreensaverSettings');
+
+  /// Asks the launcher to add Geode's transport widget when supported.
+  Future<bool> requestPinWidget() async =>
+      (await _channel.invokeMethod<bool>('requestPinWidget')) ?? false;
+
 }

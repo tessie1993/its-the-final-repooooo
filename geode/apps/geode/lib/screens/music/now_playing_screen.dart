@@ -46,6 +46,8 @@ class NowPlayingScreen extends StatelessWidget {
                   enableNativeScene: state.enableDeviceServices)),
               const SizedBox(height: 30),
               Row(children: [
+                MusicArtwork(size: 62, radius: 20, track: track),
+                const SizedBox(width: 14),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(track.title, style: text.headlineMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 8),
@@ -88,12 +90,13 @@ class NowPlayingScreen extends StatelessWidget {
                   onPressed: () => _showTools(context)),
               ]),
               const SizedBox(height: 22),
-              if (music.loopStart != null || music.sleepEndsAt != null) GelPanel(
+              if (music.loopStart != null || music.sleepEndsAt != null || music.sleepAtTrackEnd) GelPanel(
                 padding: const EdgeInsets.all(16), child: Column(children: [
                   if (music.loopStart != null) Text('Loop from ${formatMusicTime(music.loopStart!)}'
                     '${music.loopEnd == null ? ' · choose an end point' : ' to ${formatMusicTime(music.loopEnd!)}'}'),
                   if (music.sleepEndsAt != null) Text('Sleep timer ends at '
                     '${TimeOfDay.fromDateTime(music.sleepEndsAt!).format(context)}'),
+                  if (music.sleepAtTrackEnd) const Text('Music will stop after this track.'),
                 ])),
             ],
           ]),
@@ -138,6 +141,8 @@ class NowPlayingScreen extends StatelessWidget {
                 music.setSleepTimer(Duration(minutes: minutes))),
             if (music.sleepEndsAt != null) ActionChip(label: const Text('Cancel timer'),
               onPressed: () => music.setSleepTimer(null)),
+            FilterChip(label: const Text('End of this track'), selected: music.sleepAtTrackEnd,
+              onSelected: music.setSleepAtTrackEnd),
           ]),
           const SizedBox(height: 20),
           Align(alignment: Alignment.centerRight, child: TextButton(

@@ -1,4 +1,5 @@
 #include "NativeSession.hpp"
+#include "AmbientAudioBus.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -14,6 +15,7 @@ NativeSession::NativeSession(AAssetManager* assets, std::string cache)
 NativeSession::~NativeSession() {
     running_.store(false);
     worker_.join();
+    AmbientAudioBus::instance().silence();
     // Retire the last DSP through the player before destroying it. A live chain
     // must never be freed while an Oboe callback can still reference it.
     geode_player_set_dsp(player_, nullptr);
@@ -24,6 +26,15 @@ bool NativeSession::features(GeodeFeatureFrame& out) {
     std::lock_guard lock(frameMutex_);
     out = frame_;
     return hasFrame_;
+}
+
+void NativeSession::setInputRate(int rate) {
+    inputRate_.store(rate);
+    reset_.store(true);
+}
+
+void NativeSession::pushInput(const float* mono, size_t count) {
+    if (inputRate_.load() > 0) input_.push(mono, count);
 }
 
 void NativeSession::setDsp(const std::array<float, 16>& config) {
@@ -54,26 +65,46 @@ void NativeSession::installDsp(int rate) {
 void NativeSession::analyze() {
     geode_analysis* analysis = nullptr;
     int rate = 0;
+    int dspRate = 0;
     bool silence = true;
     std::array<float, 2048> stereo{};
     std::array<float, 1024> mono{};
     while (running_.load()) {
-        const int currentRate = geode_player_output_sample_rate(player_);
+        const int playerRate = geode_player_output_sample_rate(player_);
+        const int inputRate = inputRate_.load();
+        const int currentRate = inputRate > 0 ? inputRate : playerRate;
+        if (playerRate > 0 && (dspRate != playerRate || dspDirty_.load())) {
+            dspRate = playerRate;
+            installDsp(playerRate);
+        }
         if (currentRate > 0 && currentRate != rate) {
             rate = currentRate;
             geode_analysis_destroy(analysis);
             analysis = geode_analysis_create(rate, 2048, 100.f);
-            installDsp(rate);
-        } else if (rate > 0 && dspDirty_.load()) {
-            installDsp(rate);
         }
         if (reset_.exchange(false)) {
             geode_analysis_reset(analysis);
-            std::lock_guard lock(frameMutex_);
-            frame_ = {};
-            hasFrame_ = false;
+            GeodeFeatureFrame quiet{};
+            {
+                std::lock_guard lock(frameMutex_);
+                frame_ = quiet;
+                hasFrame_ = true;
+            }
+            {
+                std::lock_guard lock(vizMutex_);
+                if (viz_) geode_viz_set_features(viz_, &quiet);
+            }
+            AmbientAudioBus::instance().silence();
         }
-        const size_t count = geode_player_read_tap(player_, stereo.data(), mono.size());
+        // Always drain the player's single-consumer tap, even while another
+        // input is selected, so switching sources never replays stale audio.
+        size_t count = geode_player_read_tap(player_, stereo.data(), mono.size());
+        if (inputRate > 0) {
+            count = input_.pop(mono.data(), mono.size());
+            for (size_t i = 0; i < count; ++i) stereo[2 * i] = stereo[2 * i + 1] = mono[i];
+        } else {
+            while (input_.pop(mono.data(), mono.size()) > 0) {}
+        }
         if (count > 0 && analysis) {
             silence = false;
             geode_analysis_push(analysis, stereo.data(), count, 2);
@@ -87,13 +118,14 @@ void NativeSession::analyze() {
             }
             for (size_t i = 0; i < count; ++i)
                 mono[i] = (stereo[2 * i] + stereo[2 * i + 1]) * 0.5f;
+            AmbientAudioBus::instance().publish(updated ? &next : nullptr, mono.data(), count);
             std::lock_guard lock(vizMutex_);
             if (viz_) {
                 if (updated) geode_viz_set_features(viz_, &next);
                 geode_viz_push_pcm(viz_, mono.data(), static_cast<int>(count));
             }
         } else {
-            if (!silence && (!geode_player_play_when_ready(player_) ||
+            if (!silence && inputRate == 0 && (!geode_player_play_when_ready(player_) ||
                             geode_player_state(player_) == GEODE_PLAYER_ENDED)) {
                 silence = true;
                 GeodeFeatureFrame quiet{};
@@ -102,6 +134,7 @@ void NativeSession::analyze() {
                     frame_ = quiet;
                     hasFrame_ = true;
                 }
+                AmbientAudioBus::instance().silence();
                 std::lock_guard lock(vizMutex_);
                 if (viz_) geode_viz_set_features(viz_, &quiet);
             }

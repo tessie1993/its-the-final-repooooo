@@ -8,7 +8,6 @@ extension _MusicEffects on MusicController {
       const frequencies = <double>[31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
       final gains = List<double>.generate(frequencies.length, (i) =>
         i < _savedEqGains.length ? _savedEqGains[i].clamp(-15.0, 15.0).toDouble() : 0);
-      await _player.setEqualizer(enabled: _savedEqEnabled, bands: gains);
       if (_disposed) return;
       eqMinGain = -15;
       eqMaxGain = 15;
@@ -16,6 +15,7 @@ extension _MusicEffects on MusicController {
       eqGains = List.unmodifiable(gains);
       equalizerAvailable = true;
       equalizerEnabled = _savedEqEnabled;
+      await _applyDsp();
       _notify();
     } catch (_) {
       equalizerAvailable = false;
@@ -26,7 +26,7 @@ extension _MusicEffects on MusicController {
 
   Future<void> _setEqualizerEnabled(bool value) => _serial(() async {
     if (!equalizerAvailable) return;
-    await _player.setEqualizer(enabled: value, bands: eqGains);
+    await _applyDsp(eqEnabled: value);
     equalizerEnabled = value;
     _savedEqEnabled = value;
     _changed();
@@ -36,14 +36,56 @@ extension _MusicEffects on MusicController {
     if (!equalizerAvailable || index < 0 || index >= eqGains.length) return;
     final gains = List<double>.of(eqGains);
     gains[index] = value.clamp(eqMinGain, eqMaxGain).toDouble();
-    await _player.setEqualizer(enabled: equalizerEnabled, bands: gains);
+    await _applyDsp(bands: gains);
     eqGains = List.unmodifiable(gains);
     _savedEqGains = gains;
     _changed();
   });
 
+  double get _replayGain {
+    final track = currentTrack;
+    if (track == null || replayGainMode == 'off') return 0;
+    final album = replayGainMode == 'album';
+    final gain = (album ? track.albumGainDb ?? track.trackGainDb : track.trackGainDb) ?? 0;
+    final peak = album ? track.albumPeak ?? track.trackPeak : track.trackPeak;
+    // Prevent tag-directed gain from clipping even when the user disables the
+    // limiter. The final native limiter handles additional EQ boosts.
+    if (peak != null && peak > 0 && peak.isFinite) {
+      return math.min(gain, -20 * math.log(peak) / math.ln10 - preampDb);
+    }
+    return gain.isFinite ? gain : 0;
+  }
+
+  Future<void> _applyDsp({bool? eqEnabled, List<double>? bands}) =>
+    _player.setEqualizer(
+      enabled: true,
+      bands: (eqEnabled ?? equalizerEnabled) ? bands ?? eqGains : List.filled(10, 0),
+      bassBoost: bassBoost, loudnessDb: loudnessDb,
+      gainDb: (preampDb + _replayGain).clamp(-30.0, 15.0).toDouble(),
+      crossfeed: crossfeed, limiter: limiter,
+    );
+
+  Future<void> _setSoundEffects({double? bass, double? loudness, double? preamp,
+    bool? headphoneCrossfeed, bool? peakLimiter, String? replayGain}) => _serial(() async {
+      if (!equalizerAvailable) return;
+      final previous = (bassBoost, loudnessDb, preampDb, crossfeed, limiter, replayGainMode);
+      bassBoost = bass?.clamp(0.0, 1.0).toDouble() ?? bassBoost;
+      loudnessDb = loudness?.clamp(0.0, 10.0).toDouble() ?? loudnessDb;
+      preampDb = preamp?.clamp(-15.0, 15.0).toDouble() ?? preampDb;
+      crossfeed = headphoneCrossfeed ?? crossfeed;
+      limiter = peakLimiter ?? limiter;
+      if (const ['off', 'track', 'album'].contains(replayGain)) replayGainMode = replayGain!;
+      try { await _applyDsp(); }
+      catch (_) {
+        (bassBoost, loudnessDb, preampDb, crossfeed, limiter, replayGainMode) = previous;
+        rethrow;
+      }
+      _changed();
+    });
+
   void _setSleepTimer(Duration? value) => _change(() {
     _sleepTimer?.cancel();
+    sleepAtTrackEnd = false;
     sleepEndsAt = value == null ? null : DateTime.now().add(value);
     if (value == null || !enableDeviceServices) return;
     final deadline = sleepEndsAt;

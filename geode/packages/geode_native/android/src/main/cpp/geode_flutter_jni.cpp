@@ -136,6 +136,18 @@ JNIEXPORT void JNICALL JNI_METHOD(equalizer)(JNIEnv* env, jclass, jlong handle, 
     session(handle)->setDsp(config);
 }
 
+JNIEXPORT void JNICALL JNI_METHOD(inputRate)(JNIEnv*, jclass, jlong handle, jint sampleRate) {
+    session(handle)->setInputRate(sampleRate);
+}
+
+JNIEXPORT void JNICALL JNI_METHOD(inputPcm)(JNIEnv* env, jclass, jlong handle, jfloatArray samples, jint count) {
+    if (!samples || count <= 0 || count > env->GetArrayLength(samples)) return;
+    jfloat* pcm = env->GetFloatArrayElements(samples, nullptr);
+    if (!pcm) return;
+    session(handle)->pushInput(pcm, static_cast<size_t>(count));
+    env->ReleaseFloatArrayElements(samples, pcm, JNI_ABORT);
+}
+
 JNIEXPORT jobject JNICALL JNI_METHOD(readTags)(JNIEnv* env, jclass, jint fd) {
     geode_tags* tags = geode_tags_read(fd); // consumes and closes fd
     jclass mapClass = env->FindClass("java/util/HashMap");

@@ -7,6 +7,7 @@ extension _MusicTransport on MusicController {
     if (!source.contains(track.id)) source.add(track.id);
     _queue..clear()..addAll(source);
     queueIndex = _queue.indexOf(track.id);
+    _shuffleOrder.reset(_queue.length, queueIndex);
     _resumePositionMs = 0;
     await _loadCurrent(autoplay: true);
   });
@@ -15,6 +16,7 @@ extension _MusicTransport on MusicController {
     if (currentTrack == null && _tracks.isNotEmpty) {
       _queue..clear()..addAll(_tracks.map((track) => track.id));
       queueIndex = 0;
+      _shuffleOrder.reset(_queue.length, queueIndex);
     }
     if (currentTrack == null) return;
     error = null;
@@ -71,11 +73,15 @@ extension _MusicTransport on MusicController {
       _loadedTrackId = track.id;
       _loadingSource = false;
       position.value = _player.position;
-      if (loadedDuration != null) _acceptDuration(loadedDuration);
-      else duration = Duration(milliseconds: track.durationMs);
+      if (loadedDuration != null) {
+        _acceptDuration(loadedDuration);
+      } else {
+        duration = Duration(milliseconds: track.durationMs);
+      }
       _recentIds..remove(track.id)..insert(0, track.id);
       if (_recentIds.length > 50) _recentIds.removeRange(50, _recentIds.length);
       unawaited(_initializeEqualizer());
+      if (equalizerAvailable) await _applyDsp();
       if (autoplay) _startPlayback();
     } catch (_) {
       _loadedTrackId = null;
@@ -115,19 +121,25 @@ extension _MusicTransport on MusicController {
   Future<void> _advance(int direction, {bool completed = false}) async {
     if (_queue.isEmpty) return;
     var target = queueIndex + direction;
-    if (shuffle && _queue.length > 1 && direction > 0) {
-      // Choose another queue entry; random playback never silently edits order.
-      target = (queueIndex + 1 + math.Random().nextInt(_queue.length - 1)) % _queue.length;
+    if (shuffle) {
+      final shuffled = direction > 0 ? _shuffleOrder.next(repeatAll: repeatMode == 1)
+          : _shuffleOrder.previous();
+      if (shuffled == null) {
+        if (direction < 0) await _player.seek(Duration.zero);
+        if (completed) { await _player.pause(); _changed(); }
+        return;
+      }
+      target = shuffled;
     }
     if (target >= _queue.length) {
-      if (repeatMode == 1) target = 0;
+      if (repeatMode == 1) { target = 0; }
       else {
         if (completed) { await _player.pause(); _changed(); }
         return;
       }
     }
     if (target < 0) {
-      if (repeatMode == 1) target = _queue.length - 1;
+      if (repeatMode == 1) { target = _queue.length - 1; }
       else { await _player.seek(Duration.zero); return; }
     }
     queueIndex = target;
@@ -139,6 +151,24 @@ extension _MusicTransport on MusicController {
     if (_findTrack(id) == null) return;
     _queue.add(id);
     if (queueIndex < 0) queueIndex = 0;
+    _shuffleOrder.reset(_queue.length, queueIndex);
+  });
+
+  void _playNext(String id) => _change(() {
+    if (_findTrack(id) == null) return;
+    _queue.insert((queueIndex + 1).clamp(0, _queue.length).toInt(), id);
+    if (queueIndex < 0) queueIndex = 0;
+    // Play-next is an explicit request, so restore sequential queue order.
+    shuffle = false;
+    _shuffleOrder.reset(_queue.length, queueIndex);
+  });
+
+  Future<void> _clearQueue() => _serial(() async {
+    _queue.clear();
+    queueIndex = -1;
+    _resumePositionMs = 0;
+    _shuffleOrder.reset(0, -1);
+    await _loadCurrent(autoplay: false);
   });
 
   Future<void> _removeQueue(int index) => _serial(() async {
@@ -147,8 +177,9 @@ extension _MusicTransport on MusicController {
     final removedCurrent = index == queueIndex;
     _queue.removeAt(index);
     if (index < queueIndex) queueIndex--;
-    if (_queue.isEmpty) queueIndex = -1;
-    else if (queueIndex >= _queue.length) queueIndex = _queue.length - 1;
+    if (_queue.isEmpty) { queueIndex = -1; }
+    else if (queueIndex >= _queue.length) { queueIndex = _queue.length - 1; }
+    _shuffleOrder.reset(_queue.length, queueIndex);
     if (removedCurrent) {
       _resumePositionMs = 0;
       await _loadCurrent(autoplay: wasPlaying);
@@ -157,12 +188,12 @@ extension _MusicTransport on MusicController {
   });
 
   void _moveQueue(int oldIndex, int newIndex) => _change(() {
-    if (oldIndex < 0 || oldIndex >= _queue.length || newIndex < 0 || newIndex > _queue.length) return;
-    if (newIndex > oldIndex) newIndex--;
+    if (oldIndex < 0 || oldIndex >= _queue.length || newIndex < 0 || newIndex >= _queue.length) return;
     final id = _queue.removeAt(oldIndex);
     _queue.insert(newIndex, id);
-    if (queueIndex == oldIndex) queueIndex = newIndex;
-    else if (oldIndex < queueIndex && newIndex >= queueIndex) queueIndex--;
-    else if (oldIndex > queueIndex && newIndex <= queueIndex) queueIndex++;
+    if (queueIndex == oldIndex) { queueIndex = newIndex; }
+    else if (oldIndex < queueIndex && newIndex >= queueIndex) { queueIndex--; }
+    else if (oldIndex > queueIndex && newIndex <= queueIndex) { queueIndex++; }
+    _shuffleOrder.reset(_queue.length, queueIndex);
   });
 }

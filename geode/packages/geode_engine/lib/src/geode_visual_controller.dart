@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:geode_native/geode_native.dart';
 
 /// Owns the renderer selection and parameters, independent of widget lifetime.
@@ -15,6 +16,7 @@ class GeodeVisualController extends ChangeNotifier {
   bool enabled = false;
   bool loading = false;
   String sceneId = 'water';
+  String audioSource = 'player';
   String? milkPreset;
   String? error;
   List<String> scenes = const [];
@@ -28,6 +30,8 @@ class GeodeVisualController extends ChangeNotifier {
   Object? _textureOwner;
   int? _textureId;
   Future<void>? _initialization;
+  StreamSubscription<NativePlaybackSnapshot>? _nativeEvents;
+  String? _lastRendererError;
   Future<void> _commands = Future<void>.value();
   final Map<String, double> _parameters = {};
 
@@ -41,6 +45,19 @@ class GeodeVisualController extends ChangeNotifier {
     _notify();
     try {
       await _native.initialize();
+      _nativeEvents ??= _native.snapshots.listen((snapshot) {
+        final issue = snapshot.visualizerError;
+        if (issue == null || issue.isEmpty) { _lastRendererError = null; return; }
+        if (issue == _lastRendererError || _disposed) return;
+        _lastRendererError = issue;
+        unawaited(_enqueue(() async {
+          _textureId = null;
+          _textureOwner = null;
+          await _native.disposeTexture();
+          error = 'The visualizer stopped. Select a scene to restart it.';
+          _notify();
+        }));
+      }, onError: (Object _) {});
       final catalog = await Future.wait([_native.listScenes(), _native.listMilkPresets()]);
       if (_disposed) return;
       scenes = List.unmodifiable(catalog[0]);
@@ -90,6 +107,19 @@ class GeodeVisualController extends ChangeNotifier {
     milkPreset = preset;
     enabled = true;
     surfaceRevision++;
+    error = null;
+    _notify();
+  });
+
+  Future<void> setAudioSource(String source) => _enqueue(() async {
+    if (source != 'player' && source != 'microphone') {
+      throw ArgumentError.value(source, 'source', 'Choose player or microphone');
+    }
+    await initialize();
+    if (!_initialized || _disposed) return;
+    await _native.setAudioSource(source);
+    if (_disposed) return;
+    audioSource = source;
     error = null;
     _notify();
   });
@@ -166,6 +196,9 @@ class GeodeVisualController extends ChangeNotifier {
     return result;
   }
 
+  bool ownsTexture(int? texture, {required Object owner}) =>
+      texture != null && texture == _textureId && identical(owner, _textureOwner);
+
   Future<void> releaseTexture(int? texture, {required Object owner}) => _enqueue(() async {
     if (texture == null || _textureId != texture || !identical(owner, _textureOwner)) return;
     _textureId = null;
@@ -178,9 +211,11 @@ class GeodeVisualController extends ChangeNotifier {
     return _commands = _commands.then((_) async {
       if (_disposed) return;
       try { await action(); }
-      catch (_) {
+      catch (failure) {
         if (!_disposed) {
-          error = 'The visualizer could not apply this change. Choose a scene to retry.';
+          error = failure is PlatformException && failure.message != null
+              ? failure.message
+              : 'The visualizer could not apply this change. Choose a scene to retry.';
           _notify();
         }
       }
@@ -192,6 +227,7 @@ class GeodeVisualController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    unawaited(_nativeEvents?.cancel());
     if (_textureId != null) {
       _textureId = null;
       unawaited(_commands.then((_) => _native.disposeTexture()).catchError((Object _) {}));

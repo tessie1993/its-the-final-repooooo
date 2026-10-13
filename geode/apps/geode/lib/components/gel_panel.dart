@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../scene/geode_scene_controller.dart';
+import '../scene/nature_motion_scope.dart';
 
-/// A solid, tactile moss-and-stone surface. The historical widget name and
+/// A translucent, tactile moss-and-stone surface with bioluminescent veins. The historical widget name and
 /// sizing parameters are retained so every screen shares the nature material.
-/// Surfaces are deliberately opaque; [opacity] controls their tonal depth.
+/// The textured skin preserves contrast while the landscape shows through.
 class GelPanel extends StatelessWidget {
   const GelPanel({super.key, required this.child,
     this.padding = const EdgeInsets.all(20), this.radius = 28,
@@ -19,6 +21,7 @@ class GelPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final depth = opacity.clamp(0.0, 1.0).toDouble();
+    final scene = NatureMotionScope.maybeOf(context);
     final borderRadius = BorderRadius.only(
       topLeft: Radius.circular(radius * .85), topRight: Radius.circular(radius * 1.1),
       bottomLeft: Radius.circular(radius * 1.05), bottomRight: Radius.circular(radius * .82));
@@ -28,17 +31,23 @@ class GelPanel extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(borderRadius: borderRadius, boxShadow: [
         const BoxShadow(color: Color(0x6604090A), blurRadius: 22, offset: Offset(0, 13)),
-        BoxShadow(color: const Color(0xFF101D17), blurRadius: 0,
+        BoxShadow(color: const Color(0x24101D17), blurRadius: 0,
           offset: Offset(0, highlighted ? 5 : 3)),
       ]),
       child: ClipRRect(borderRadius: borderRadius,
-        child: CustomPaint(foregroundPainter: _StoneRimPainter(radius, highlighted),
+        child: CustomPaint(foregroundPainter: _StoneRimPainter(radius, highlighted, scene),
           child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(
             begin: Alignment.topLeft, end: Alignment.bottomRight,
-            colors: [top, base, Color.lerp(base, const Color(0xFF626343), .2)!],
-            stops: const [0, .65, 1])),
+            colors: [top.withValues(alpha: .85), base.withValues(alpha: .82),
+              Color.lerp(base, const Color(0xFF626343), .2)!.withValues(alpha: .86)],
+            stops: const [0, .65, 1]),
+            image: const DecorationImage(image: AssetImage('assets/textures/moss.png'),
+              fit: BoxFit.cover, opacity: .075)),
             child: CustomPaint(painter: const _StoneGrainPainter(),
-              child: Padding(padding: padding, child: child)),
+              child: DecoratedBox(decoration: const BoxDecoration(
+                image: DecorationImage(image: AssetImage('assets/textures/bioluminescent-veins.png'),
+                  fit: BoxFit.cover, opacity: .06)),
+                child: Padding(padding: padding, child: child))),
           ),
         ),
       ),
@@ -47,16 +56,23 @@ class GelPanel extends StatelessWidget {
 }
 
 class _StoneRimPainter extends CustomPainter {
-  const _StoneRimPainter(this.radius, this.highlighted);
+  _StoneRimPainter(this.radius, this.highlighted, this.scene) : super(repaint: scene);
+  final GeodeSceneController? scene;
   final double radius;
   final bool highlighted;
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final rect = (Offset.zero & size).deflate(.8);
+    final quiet = scene?.effectiveReducedMotion ?? false;
+    final glow = .08 + (quiet ? 0 : (scene?.audioRms ?? 0) * .28 + (scene?.pulse ?? 0) * .12);
     final edge = BorderRadius.only(
       topLeft: Radius.circular(radius * .85), topRight: Radius.circular(radius * 1.1),
       bottomLeft: Radius.circular(radius * 1.05), bottomRight: Radius.circular(radius * .82));
+    canvas.drawRRect(edge.toRRect(rect.deflate(1)), Paint()
+      ..style = PaintingStyle.stroke..strokeWidth = 2
+      ..color = const Color(0xFF8AF2B0).withValues(alpha: glow)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
     canvas.drawRRect(edge.toRRect(rect), Paint()
       ..style = PaintingStyle.stroke..strokeWidth = highlighted ? 1.5 : 1
       ..shader = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
@@ -65,7 +81,7 @@ class _StoneRimPainter extends CustomPainter {
         stops: const [0, .38, .65, 1]).createShader(rect));
   }
   @override
-  bool shouldRepaint(_StoneRimPainter old) => old.radius != radius || old.highlighted != highlighted;
+  bool shouldRepaint(_StoneRimPainter old) => old.radius != radius || old.highlighted != highlighted || old.scene != scene;
 }
 
 class _StoneGrainPainter extends CustomPainter {

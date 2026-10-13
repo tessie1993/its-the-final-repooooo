@@ -88,7 +88,7 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
   Widget _header(BuildContext context, MusicController music) {
     final text = Theme.of(context).textTheme;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('YOUR SOUND, SUSPENDED', style: text.labelSmall),
+      Text('YOUR LISTENING GROVE', style: text.labelSmall),
       const SizedBox(height: 10),
       Text('Music library', style: text.headlineLarge),
       const SizedBox(height: 10),
@@ -100,11 +100,19 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${music.tracks.length} ${music.tracks.length == 1 ? 'track' : 'tracks'}', style: text.titleLarge),
             const SizedBox(height: 4),
-            Text(music.busy ? 'Adding your music…' : 'From your device. Always yours.', style: text.bodySmall),
+            Text(music.busy ? music.importStatus ?? 'Adding your music…' : 'From your device. Always yours.', style: text.bodySmall),
           ])),
           GelIconButton(icon: music.busy ? Icons.hourglass_top_rounded : Icons.add_rounded,
             tooltip: 'Import audio files', onPressed: music.busy ? null : music.importAudio),
         ]))),
+      if (music.busy) ...[
+        const SizedBox(height: 10),
+        LinearProgressIndicator(value: music.importProgress),
+        Align(alignment: Alignment.centerRight, child: TextButton(
+          onPressed: music.cancelImport, child: const Text('Cancel import'))),
+      ] else Align(alignment: Alignment.centerRight, child: TextButton.icon(
+        icon: const Icon(Icons.link_rounded), label: const Text('Import from link'),
+        onPressed: () => _importLink(context, music))),
       const SizedBox(height: 18),
       MusicErrorBanner(music: music),
       GelPanel(radius: 22, padding: const EdgeInsets.fromLTRB(16, 2, 4, 2),
@@ -151,16 +159,16 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
         trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16), onTap: onTap)));
 
   Widget _empty(BuildContext context, MusicController music, String query) {
-    if (query.isNotEmpty) return MusicEmpty(title: 'Nothing found',
+    if (query.isNotEmpty) { return MusicEmpty(title: 'Nothing found',
       message: 'Try a different title, artist or album.', actionLabel: 'Clear search',
-      action: () => setState(_search.clear), icon: Icons.search_rounded);
-    if (_tab == 3) return MusicEmpty(title: 'Make a little collection',
+      action: () => setState(_search.clear), icon: Icons.search_rounded); }
+    if (_tab == 3) { return MusicEmpty(title: 'Make a little collection',
       message: 'Gather your favorite tracks into a playlist for any mood.',
-      actionLabel: 'Create playlist', action: _newPlaylist, icon: Icons.queue_music_rounded);
-    if (_tab == 4) return const MusicEmpty(title: 'Keep what moves you',
-      message: 'Add a heart to a track and find it here.', icon: Icons.favorite_border_rounded);
-    if (_tab == 5) return const MusicEmpty(title: 'Your listening trail',
-      message: 'Tracks you play will appear here.', icon: Icons.history_rounded);
+      actionLabel: 'Create playlist', action: _newPlaylist, icon: Icons.queue_music_rounded); }
+    if (_tab == 4) { return const MusicEmpty(title: 'Keep what moves you',
+      message: 'Add a heart to a track and find it here.', icon: Icons.favorite_border_rounded); }
+    if (_tab == 5) { return const MusicEmpty(title: 'Your listening trail',
+      message: 'Tracks you play will appear here.', icon: Icons.history_rounded); }
     return MusicEmpty(title: 'Bring your music into nature',
       message: 'Choose audio files from your device to start your personal collection.',
       actionLabel: 'Import music', action: music.busy ? null : music.importAudio);
@@ -173,7 +181,46 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
     _openCollection(name, 'playlist', id);
   }
 
+  Future<void> _importLink(BuildContext context, MusicController music) async {
+    final url = await showDialog<String>(context: context, builder: (_) => const _AudioLinkDialog());
+    if (url != null && mounted) await music.importAudioUrl(url);
+  }
+
   void _openCollection(String name, String type, String id) => showGelRoute<void>(context,
     MusicCollectionScreen(state: widget.state, title: name, kind: type, collectionId: id),
     name: '/music/$type');
+}
+
+class _AudioLinkDialog extends StatefulWidget {
+  const _AudioLinkDialog();
+  @override
+  State<_AudioLinkDialog> createState() => _AudioLinkDialogState();
+}
+
+class _AudioLinkDialogState extends State<_AudioLinkDialog> {
+  final _input = TextEditingController();
+  final _form = GlobalKey<FormState>();
+  @override
+  void dispose() { _input.dispose(); super.dispose(); }
+  void _submit() {
+    if (_form.currentState!.validate()) Navigator.pop(context, _input.text.trim());
+  }
+  @override
+  Widget build(BuildContext context) => AlertDialog(scrollable: true,
+    title: const Text('Import an audio link'),
+    content: Form(key: _form, child: Column(mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Download a direct audio file into your library for offline listening. '
+          'Use a file link, such as MP3, M4A, WAV or FLAC. Web pages and live radio links are not supported.'),
+        const SizedBox(height: 18),
+        TextFormField(controller: _input, autofocus: true, keyboardType: TextInputType.url,
+          autocorrect: false, decoration: const InputDecoration(labelText: 'Audio file URL', hintText: 'https://'),
+          onFieldSubmitted: (_) => _submit(), validator: (value) {
+            final uri = Uri.tryParse(value?.trim() ?? '');
+            return uri != null && const ['http', 'https'].contains(uri.scheme) &&
+              uri.host.isNotEmpty && uri.userInfo.isEmpty ? null : 'Enter a direct HTTP or HTTPS audio link';
+          }),
+      ])),
+    actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+      FilledButton(onPressed: _submit, child: const Text('Download'))]);
 }

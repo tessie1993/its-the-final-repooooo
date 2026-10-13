@@ -1,6 +1,7 @@
 #pragma once
 
 #include "api/geode_api.h"
+#include "audio/player/SpscRing.hpp"
 
 #include <array>
 #include <atomic>
@@ -23,6 +24,8 @@ public:
     geode_player* player() const { return player_; }
     void resetAnalysis() { reset_.store(true); }
     bool features(GeodeFeatureFrame& out);
+    void setInputRate(int sampleRate);
+    void pushInput(const float* mono, size_t count);
     void setDsp(const std::array<float, 16>& config);
     void createSurface(int width, int height);
     void releaseSurface();
@@ -59,6 +62,8 @@ private:
     // crossfeed, limiter. New chains are installed instead of mutating live DSP.
     std::array<float, 16> dspConfig_{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1};
     std::atomic<bool> dspDirty_{true};
+    std::atomic<int> inputRate_{0};
+    geode::audio::player::SpscRing<float> input_{16384};
     std::thread worker_;
 };
 

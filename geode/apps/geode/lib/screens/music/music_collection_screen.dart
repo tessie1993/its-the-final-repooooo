@@ -45,7 +45,7 @@ class _MusicCollectionScreenState extends State<MusicCollectionScreen> {
           child: CustomScrollView(slivers: [
             SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.all(24),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Center(child: MusicArtwork(size: 176, radius: 52)),
+                Center(child: MusicArtwork(size: 176, radius: 52, track: tracks.firstOrNull)),
                 const SizedBox(height: 24),
                 Text(name, style: Theme.of(context).textTheme.headlineMedium),
                 const SizedBox(height: 8),
@@ -80,7 +80,7 @@ class _MusicCollectionScreenState extends State<MusicCollectionScreen> {
                 action: isPlaylist ? () => showPlaylistTracks(context, widget.state, widget.collectionId) : null)))
             else if (_reordering && isPlaylist) SliverPadding(padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverReorderableList(itemCount: tracks.length,
-                onReorder: (oldIndex, newIndex) => music.movePlaylistTrack(widget.collectionId, oldIndex, newIndex),
+                onReorderItem: (oldIndex, newIndex) => music.movePlaylistTrack(widget.collectionId, oldIndex, newIndex),
                 itemBuilder: (context, index) => MusicTrackTile(key: ValueKey(tracks[index].id),
                   state: widget.state, track: tracks[index], from: tracks,
                   trailing: ReorderableDragStartListener(index: index,

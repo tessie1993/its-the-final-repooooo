@@ -8,7 +8,8 @@ import 'geode_scene_controller.dart';
 /// An opaque moss and jade medallion and seeds sharing one depth buffer.
 /// Flutter paints the water below this bounded GPU view.
 class PlayerOrbScene {
-  PlayerOrbScene._(fs.Texture2D artwork) {
+  PlayerOrbScene._(fs.Texture2D artwork, fs.Texture2D moss, fs.Texture2D emission) {
+    _jade..baseColorTexture = moss..emissiveTexture = emission;
     scene
       ..environmentIntensity = .75
       ..exposure = 1.05
@@ -51,7 +52,9 @@ class PlayerOrbScene {
       'assets/images/stone-dial.png',
       maxSize: 512,
     );
-    return PlayerOrbScene._(artwork);
+    final moss = await fs.Texture2D.fromAsset('assets/textures/moss.png', maxSize: 512);
+    final emission = await fs.Texture2D.fromAsset('assets/textures/bioluminescent-veins.png', maxSize: 512);
+    return PlayerOrbScene._(artwork, moss, emission);
   }
 
   final scene = fs.Scene();
@@ -65,7 +68,11 @@ class PlayerOrbScene {
   final _tile = fs.Node(name: 'Stone record face');
   final _droplets = <fs.Node>[];
   final _jade = fs.PhysicallyBasedMaterial()
-    ..baseColorFactor = vm.Vector4(.045, .19, .11, 1)
+    ..baseColorFactor = vm.Vector4(.65, .84, .62, 1)
+    ..transmission = .30
+    ..thickness = .18
+    ..ior = 1.38
+    ..emissiveFactor = vm.Vector4(.12, .35, .20, 1)
     ..roughnessFactor = .44
     ..metallicFactor = 0
     ..clearcoat = .14
@@ -105,6 +112,8 @@ class PlayerOrbScene {
     }
     final material = controller.displayMaterial.clamp(0.0, 2.0).toDouble();
     _jade.roughnessFactor = .44 + material * .08;
+    final envelope = reducedMotion ? 0.0 : controller.audioRms * .6 + controller.audioBass * .25;
+    _jade.emissiveFactor = vm.Vector4(.08 + envelope * .3, .20 + envelope, .12 + envelope * .65, 1);
     scene.renderScale = controller.highQuality ? .85 : .65;
     // The app owns time; the scene must not create an independent animation.
     scene.update(0);

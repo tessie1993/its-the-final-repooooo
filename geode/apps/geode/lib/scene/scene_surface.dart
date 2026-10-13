@@ -12,7 +12,7 @@ import 'native_nature_layer.dart';
 export 'geode_scene_controller.dart';
 export 'gel_float.dart';
 
-/// A woodland lake with solid, raymarched moss, stone and bark sculptures.
+/// A woodland lake with translucent, textured moss, stone and bark sculptures.
 /// Directional daylight, mineral grain and touch ripples share a bounded clock.
 class SceneSurface extends StatefulWidget {
   const SceneSurface({
@@ -40,6 +40,7 @@ class _SceneSurfaceState extends State<SceneSurface>
   Duration? _previous;
   ui.FragmentShader? _shader;
   ui.Image? _environment;
+  final List<ui.Image> _materialTextures = [];
   bool _systemReducedMotion = false;
   bool _appActive = true;
   bool _tickerModeEnabled = true;
@@ -56,6 +57,7 @@ class _SceneSurfaceState extends State<SceneSurface>
   Future<void> _loadRenderer() async {
     ui.Image? image;
     ui.FragmentShader? shader;
+    final materialTextures = <ui.Image>[];
     try {
       // Decode once; no image readback or shader creation happens each frame.
       final bytes = await rootBundle.load('assets/images/forest-sanctuary.png');
@@ -68,27 +70,40 @@ class _SceneSurfaceState extends State<SceneSurface>
       } finally {
         codec.dispose();
       }
+      for (final texture in ['moss', 'river-stone', 'bark', 'bioluminescent-veins']) {
+        final data = await rootBundle.load('assets/textures/$texture.png');
+        final textureCodec = await ui.instantiateImageCodec(
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes), targetWidth: 1024);
+        try { materialTextures.add((await textureCodec.getNextFrame()).image); }
+        finally { textureCodec.dispose(); }
+      }
       final program = await ui.FragmentProgram.fromAsset('shaders/nature_stone.frag');
       shader = program.fragmentShader();
       shader.setImageSampler(0, image);
+      for (var i = 0; i < materialTextures.length; i++) {
+        shader.setImageSampler(i + 1, materialTextures[i]);
+      }
       if (!mounted) {
         shader.dispose();
         image.dispose();
+        for (final texture in materialTextures) { texture.dispose(); }
         return;
       }
       setState(() {
         _shader = shader;
         _environment = image;
+        _materialTextures.addAll(materialTextures);
       });
       widget.controller.reportRenderer(ready: true);
     } catch (error) {
       shader?.dispose();
       if (!mounted) {
+        for (final texture in materialTextures) { texture.dispose(); }
         image?.dispose();
         return;
       }
       // Keep a successfully decoded background if shader loading fails.
-      setState(() => _environment = image);
+      setState(() { _environment = image; _materialTextures.addAll(materialTextures); });
       widget.controller.reportRenderer(ready: false, error: error.toString());
       if (kDebugMode) debugPrint('Geode scene fallback: $error');
     }
@@ -168,6 +183,7 @@ class _SceneSurfaceState extends State<SceneSurface>
             controller: widget.controller,
             shader: _shader,
             environment: _environment,
+            materialTextures: _materialTextures,
             orbAlignment: widget.orbAlignment,
             orbScale: widget.orbScale,
             systemReducedMotion: _systemReducedMotion,
@@ -203,6 +219,7 @@ class _SceneSurfaceState extends State<SceneSurface>
     _ticker.dispose();
     _shader?.dispose();
     _environment?.dispose();
+    for (final texture in _materialTextures) { texture.dispose(); }
     super.dispose();
   }
 }
@@ -212,6 +229,7 @@ class _ScenePainter extends CustomPainter {
     required this.controller,
     required this.shader,
     required this.environment,
+    required this.materialTextures,
     required this.orbAlignment,
     required this.orbScale,
     required this.systemReducedMotion,
@@ -220,6 +238,7 @@ class _ScenePainter extends CustomPainter {
   final GeodeSceneController controller;
   final ui.FragmentShader? shader;
   final ui.Image? environment;
+  final List<ui.Image> materialTextures;
   final Alignment orbAlignment;
   final double orbScale;
   final bool systemReducedMotion;
@@ -260,6 +279,8 @@ class _ScenePainter extends CustomPainter {
         }
       }
       values.add(controller.hue); // Float slot 31.
+      values.add(reduced ? 0.0 : controller.audioRms); // Float slot 32.
+      values.add(reduced ? 0.0 : controller.audioBass); // Float slot 33.
       for (var i = 0; i < values.length; i += 1) {
         activeShader.setFloat(i, values[i]);
       }
@@ -336,46 +357,30 @@ class _ScenePainter extends CustomPainter {
       paintImage(canvas: canvas, rect: Offset.zero & size, image: image, fit: BoxFit.cover);
     }
     canvas.restore();
-    final water = <Color>[
-      const Color(0x77E9FFFF), const Color(0x1042C6D1),
-      const Color(0x661C90A8), const Color(0xDAB8F4F3),
+    final material = controller.materialIndex;
+    final palettes = [
+      [const Color(0x605D7D3C), const Color(0xB0284F35)],
+      [const Color(0x605A776D), const Color(0xB0445B4D)],
+      [const Color(0x606F583A), const Color(0xB0483824)],
     ];
-    final opal = <Color>[
-      const Color(0xEAF8E9EA), const Color(0xB9B8D6DF),
-      const Color(0xC88EABD2), const Color(0xEFF4E8F6),
-    ];
-    final mercury = <Color>[
-      const Color(0xFFF4FFFF), const Color(0xD8456D77),
-      const Color(0xF016343E), const Color(0xFFF2FCFD),
-    ];
-    final material = controller.displayMaterial;
-    final colors = List<Color>.generate(4, (i) => Color.lerp(
-      Color.lerp(water[i], opal[i], material.clamp(0.0, 1.0).toDouble()),
-      mercury[i], (material - 1).clamp(0.0, 1.0).toDouble(),
-    )!);
-    if ((controller.hue - .5).abs() > .005) {
-      final tint = HSVColor.fromAHSV(.18, (controller.hue * 360 + 180) % 360, .55, .95).toColor();
-      for (var i = 0; i < colors.length; i++) { colors[i] = Color.alphaBlend(tint, colors[i]); }
-    }
-    canvas.drawPath(shape, Paint()
-      ..shader = RadialGradient(center: const Alignment(-.38, -.5),
-          radius: 1.02, colors: colors, stops: const [0, .45, .81, 1]).createShader(orb));
-    canvas.drawPath(shape, Paint()
-      ..shader = const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-          colors: [Color(0xF1E5FFFC), Color(0x18D5FCFF), Color(0xA28FDBE7), Color(0xEED7FFFF)],
-          stops: [0, .35, .72, 1]).createShader(orb)
-      ..style = PaintingStyle.stroke..strokeWidth = organic ? 1.35 : .8);
+    canvas.drawPath(shape, Paint()..shader = RadialGradient(
+      center: const Alignment(-.38, -.5), radius: 1.1,
+      colors: palettes[material]).createShader(orb));
     canvas.save();
     canvas.clipPath(shape);
-    canvas.drawOval(Rect.fromCenter(center: center + Offset(-radius * .37, -radius * .60),
-        width: radius * .62, height: radius * .16), Paint()
-      ..color = const Color(0xBDF5FFFF)
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, math.max(.5, radius * .045)));
-    canvas.drawArc(orb.deflate(radius * .04), math.pi * 1.05, math.pi * .38, false,
-        Paint()..color = const Color(0xB8FFFFFF)..style = PaintingStyle.stroke
-          ..strokeWidth = math.max(.7, radius * .009)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, math.max(.3, radius * .005)));
+    if (materialTextures.length > material) {
+      paintImage(canvas: canvas, rect: orb, image: materialTextures[material],
+        fit: BoxFit.cover, opacity: .55);
+    }
+    final envelope = reduced ? .2 : .2 + controller.audioRms * .45 + controller.audioBass * .2;
+    if (materialTextures.length > 3) {
+      paintImage(canvas: canvas, rect: orb, image: materialTextures[3],
+        fit: BoxFit.cover, opacity: envelope);
+    }
     canvas.restore();
+    canvas.drawPath(shape, Paint()..style = PaintingStyle.stroke
+      ..strokeWidth = organic ? 1.4 : .7
+      ..color = const Color(0xFFAAF2AD).withValues(alpha: .2 + envelope * .25));
   }
 
   void _paintParticles(Canvas canvas, Size size) {
@@ -393,7 +398,8 @@ class _ScenePainter extends CustomPainter {
       final parallax = controller.tilt * (depth * 9);
       final point = Offset(x + drift, y) + parallax;
       final glint = math.pow(math.max(0.0, math.sin(seed + t * .65)), 12).toDouble();
-      final opacity = .035 + depth * .08 + glint * .15;
+      final opacity = (.035 + depth * .08 + glint * .15 +
+          (reduced ? 0 : controller.audioTreble * .17)).clamp(0.0, 1.0).toDouble();
       final radius = .55 + depth * 1.1;
       if (depth > .9 && controller.highQuality) {
         paint..color = const Color(0xFFAEEEF6).withValues(alpha: opacity * .2)

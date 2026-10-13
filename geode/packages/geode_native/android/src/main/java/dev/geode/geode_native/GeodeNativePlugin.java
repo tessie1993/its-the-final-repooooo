@@ -1,6 +1,8 @@
 package dev.geode.geode_native;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -22,6 +24,7 @@ import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
+import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.view.TextureRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -34,7 +37,7 @@ import java.util.concurrent.Executors;
 
 /** Flutter owns controls; the original C++ engine owns decode, DSP, analysis and rendering. */
 public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.MethodCallHandler,
-        ActivityAware, Application.ActivityLifecycleCallbacks {
+        ActivityAware, Application.ActivityLifecycleCallbacks, PluginRegistry.RequestPermissionsResultListener {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private Context context;
@@ -49,8 +52,16 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
     private AudioManager audio;
     private AudioFocusRequest focus;
     private Activity activity;
+    private ActivityPluginBinding activityBinding;
+    private GeodeAudioInput microphone;
+    private boolean microphoneSelected;
+    private MethodChannel.Result microphonePermission;
+    private static final int MICROPHONE_PERMISSION = 7302;
+    private GeodeVideoExporter exporter;
     private long handle;
     private long requestedToken = -1;
+    private long openRequest;
+    private long nextRequest;
     private GeodeTextureRenderer renderer;
     private boolean closingTexture;
     private boolean resumeOnFocus;
@@ -61,6 +72,7 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
     @Override public void onAttachedToEngine(FlutterPluginBinding binding) {
         context = binding.getApplicationContext();
         textures = binding.getTextureRegistry();
+        exporter = new GeodeVideoExporter(context, binding.getBinaryMessenger());
         methods = new MethodChannel(binding.getBinaryMessenger(), "geode_native");
         methods.setMethodCallHandler(this);
         playbackEvents = new EventChannel(binding.getBinaryMessenger(), "geode_native/playback");
@@ -138,7 +150,7 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
                     GeodePlaybackService.update(context, (Map<?, ?>) call.arguments); break;
                 case "play": play(); break;
                 case "pause": pause(); break;
-                case "stop": NativeBindings.command(handle, 2, 0, 0); abandonFocus(); break;
+                case "stop": ++openRequest; ++nextRequest; NativeBindings.command(handle, 2, 0, 0); abandonFocus(); break;
                 case "seek": NativeBindings.command(handle, 3, number(call, "positionMs", 0).longValue(), 0); break;
                 case "setVolume":
                     volume = Math.max(0, Math.min(1, finite(number(call, "volume", 1).doubleValue())));
@@ -152,6 +164,7 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
                     String id = requiredString(call, "id");
                     if (!Arrays.asList(NativeBindings.scenes(handle).split("\n")).contains(id))
                         throw new IllegalArgumentException("Unknown scene: " + id);
+                    GeodeAmbientPreferences.rememberScene(context, id);
                     if (renderer == null) NativeBindings.scene(handle, id);
                     else {
                         renderer.submit(() -> {
@@ -163,8 +176,11 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
                 case "setParam":
                     if (!NativeBindings.param(handle, requiredString(call, "name"), finite(number(call, "value", 0).doubleValue())))
                         throw new IllegalArgumentException("Unknown visualization parameter");
+                    GeodeAmbientPreferences.rememberParam(context, requiredString(call, "name"), number(call, "value", 0).floatValue());
                     break;
-                case "setReducedMotion": NativeBindings.reducedMotion(handle, Boolean.TRUE.equals(call.argument("enabled"))); break;
+                case "setReducedMotion":
+                    NativeBindings.reducedMotion(handle, Boolean.TRUE.equals(call.argument("enabled")));
+                    GeodeAmbientPreferences.rememberReducedMotion(context, Boolean.TRUE.equals(call.argument("enabled"))); break;
                 case "setPaused": if (renderer != null) renderer.setPaused(Boolean.TRUE.equals(call.argument("paused"))); break;
                 case "listScenes": result.success(Arrays.asList(NativeBindings.scenes(handle).split("\n"))); return;
                 case "listMilkPresets": io.execute(() -> {
@@ -173,6 +189,10 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
                 }); return;
                 case "loadMilkPreset": loadMilkPreset(requiredString(call, "name"), result); return;
                 case "setEqualizer": equalizer(call); break;
+                case "setAudioSource": setAudioSource(requiredString(call, "source"), result); return;
+                case "setWallpaper": GeodeAmbientActions.setWallpaper(activity); break;
+                case "openScreensaverSettings": GeodeAmbientActions.openScreensaverSettings(activity); break;
+                case "requestPinWidget": result.success(GeodeAmbientActions.requestPinWidget(context)); return;
                 case "touch": NativeBindings.touch(handle,
                     number(call, "x", 0).floatValue(), number(call, "y", 0).floatValue(),
                     number(call, "dx", 0).floatValue(), number(call, "dy", 0).floatValue(),
@@ -185,6 +205,8 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
 
     private void open(MethodCall call, MethodChannel.Result result) {
         boolean next = call.method.equals("setNext");
+        final long request = next ? ++nextRequest : ++openRequest;
+        if (!next) ++nextRequest;
         String value = call.argument("uri");
         long token = number(call, "token", -1).longValue();
         long target = handle;
@@ -219,9 +241,9 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
                     }
                 } else throw new IOException("Audio must be a local file or content URI");
                 main.post(() -> {
-                    if (handle != target) {
+                    if (handle != target || request != (next ? nextRequest : openRequest)) {
                         try { ParcelFileDescriptor.adoptFd(fd).close(); } catch (IOException ignored) {}
-                        result.error("engine_closed", "Native engine was detached", null);
+                        result.error("request_replaced", "A newer playback request replaced this file", null);
                         return;
                     }
                     if (!next) requestedToken = token;
@@ -329,10 +351,51 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
                 main.post(() -> {
                     if (target != handle) { result.error("engine_closed", "Native engine was detached", null); return; }
                     NativeBindings.milk(target, preset.getAbsolutePath());
+                    GeodeAmbientPreferences.rememberMilk(context, preset.getAbsolutePath());
                     result.success(null);
                 });
             } catch (Exception error) { main.post(() -> failure(result, error)); }
         });
+    }
+
+    private void setAudioSource(String source, MethodChannel.Result result) {
+        if ("player".equals(source)) {
+            microphoneSelected = false;
+            if (microphone != null) { microphone.stop(); microphone = null; }
+            NativeBindings.inputRate(handle, 0);
+            result.success(null);
+            return;
+        }
+        if (!"microphone".equals(source)) throw new IllegalArgumentException("Choose player or microphone");
+        if (activity == null) throw new IllegalStateException("Open Geode to enable the microphone");
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            if (microphonePermission != null) throw new IllegalStateException("Microphone permission is already being requested");
+            microphonePermission = result;
+            activity.requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, MICROPHONE_PERMISSION);
+            return;
+        }
+        startMicrophone();
+        result.success(null);
+    }
+
+    private void startMicrophone() {
+        if (microphone == null) microphone = new GeodeAudioInput(handle);
+        microphone.start();
+        microphoneSelected = true;
+    }
+
+    @Override public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        if (requestCode != MICROPHONE_PERMISSION) return false;
+        MethodChannel.Result result = microphonePermission;
+        microphonePermission = null;
+        if (result == null) return true;
+        if (results.length == 0 || results[0] != PackageManager.PERMISSION_GRANTED) {
+            result.error("permission_denied", "Allow microphone access to visualize live sound", null);
+            return true;
+        }
+        try { startMicrophone(); result.success(null); }
+        catch (Throwable error) { failure(result, error); }
+        return true;
     }
 
     private void equalizer(MethodCall call) {
@@ -377,6 +440,12 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
 
     @Override public void onDetachedFromEngine(FlutterPluginBinding binding) {
         main.removeCallbacks(poll);
+        if (exporter != null) { exporter.close(); exporter = null; }
+        if (microphone != null) { microphone.stop(); microphone = null; }
+        if (microphonePermission != null) {
+            microphonePermission.error("engine_closed", "Native engine was detached", null);
+            microphonePermission = null;
+        }
         methods.setMethodCallHandler(null);
         playbackEvents.setStreamHandler(null);
         featureEvents.setStreamHandler(null);
@@ -413,12 +482,34 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
         result.error("geode_native", error.getMessage() == null ? error.toString() : error.getMessage(), null);
     }
 
-    @Override public void onAttachedToActivity(ActivityPluginBinding binding) { activity = binding.getActivity(); }
-    @Override public void onDetachedFromActivityForConfigChanges() { activity = null; }
-    @Override public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) { activity = binding.getActivity(); }
-    @Override public void onDetachedFromActivity() { activity = null; }
-    @Override public void onActivityResumed(Activity value) { if (value == activity && renderer != null) renderer.setVisible(true); }
-    @Override public void onActivityPaused(Activity value) { if (value == activity && renderer != null) renderer.setVisible(false); }
+    @Override public void onAttachedToActivity(ActivityPluginBinding binding) {
+        activityBinding = binding;
+        activity = binding.getActivity();
+        if (exporter != null) exporter.attach(binding);
+        binding.addRequestPermissionsResultListener(this);
+    }
+    private void detachActivity() {
+        if (exporter != null) exporter.detach();
+        if (activityBinding != null) activityBinding.removeRequestPermissionsResultListener(this);
+        activityBinding = null;
+        activity = null;
+        if (microphone != null) microphone.stop();
+    }
+    @Override public void onDetachedFromActivityForConfigChanges() { detachActivity(); }
+    @Override public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) { onAttachedToActivity(binding); }
+    @Override public void onDetachedFromActivity() { detachActivity(); }
+    @Override public void onActivityResumed(Activity value) {
+        if (value != activity) return;
+        if (renderer != null) renderer.setVisible(true);
+        if (microphoneSelected && handle != 0) {
+            try { startMicrophone(); } catch (RuntimeException error) { visualizerError = error.getMessage(); }
+        }
+    }
+    @Override public void onActivityPaused(Activity value) {
+        if (value != activity) return;
+        if (renderer != null) renderer.setVisible(false);
+        if (microphone != null) microphone.stop();
+    }
     @Override public void onActivityCreated(Activity value, Bundle state) {}
     @Override public void onActivityStarted(Activity value) {}
     @Override public void onActivityStopped(Activity value) {}

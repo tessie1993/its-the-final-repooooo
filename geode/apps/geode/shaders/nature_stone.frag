@@ -18,7 +18,13 @@ uniform vec4 uTouch1;        // 19..22
 uniform vec4 uTouch2;        // 23..26
 uniform vec4 uTouch3;        // 27..30
 uniform float uHue;         // 31: centered hue rotation, .5 is neutral
+uniform float uAudioRms;    // 32: live measured PCM envelope
+uniform float uAudioBass;   // 33: live measured bass envelope
 uniform sampler2D uEnvironment; // sampler slot 0
+uniform sampler2D uMoss;        // sampler slot 1
+uniform sampler2D uStone;       // sampler slot 2
+uniform sampler2D uBark;        // sampler slot 3
+uniform sampler2D uVeins;       // sampler slot 4: transparent bioluminescence
 
 out vec4 fragColor;
 
@@ -106,27 +112,31 @@ float mineralNoise(vec3 p) {
   return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453);
 }
 
-vec3 natureSurface(vec3 position, vec3 normal) {
+vec3 natureSurface(vec3 position, vec3 normal, vec2 screenUv) {
   vec3 light = normalize(vec3(-.55, .85, 1.20));
   float diffuse = max(dot(normal, light), 0.0);
-  float grain = mineralNoise(floor(position * 190.0));
-  float mossPatch = sin(position.x * 9.0 + sin(position.y * 7.0)) *
-                    sin(position.z * 8.0 - position.y * 4.0);
-  vec3 jade = mix(vec3(.075, .16, .105), vec3(.27, .36, .16),
-                  smoothstep(-.1, .58, mossPatch));
-  float vein = pow(abs(sin(position.x * 6.0 + position.y * 8.0 + sin(position.z * 11.0))), 24.0);
-  jade += vec3(.19, .18, .11) * vein * .34;
-  vec3 stone = mix(vec3(.22, .25, .22), vec3(.48, .49, .40), grain * .2 + vein * .22);
-  float rings = sin(length(position.xy + vec2(.12, -.14)) * 88.0 + sin(position.y * 12.0) * 3.0);
-  vec3 bark = mix(vec3(.18, .105, .055), vec3(.38, .255, .13), rings * .5 + .5);
-  vec3 material = mix(jade, stone, clamp(uMaterial, 0.0, 1.0));
+  // Photograph-based material maps follow the curved world-space surface.
+  vec2 textureUv = fract(position.xy * .78 + position.z * vec2(.16, .09) + .5);
+  vec3 moss = texture(uMoss, textureUv).rgb;
+  vec3 stone = texture(uStone, textureUv).rgb;
+  vec3 bark = texture(uBark, textureUv).rgb;
+  vec3 material = mix(moss, stone, clamp(uMaterial, 0.0, 1.0));
   material = mix(material, bark, clamp(uMaterial - 1.0, 0.0, 1.0));
-  material *= .76 + grain * .24;
-  // Soft diffuse daylight and a restrained satin highlight: every material is
-  // opaque. No environment refraction, transparent shell or emissive glass rim.
-  vec3 color = material * (.43 + diffuse * .85);
+  float edge = pow(1.0 - max(normal.z, 0.0), 2.0);
+  // Organic transmission keeps the landscape visible through the softer core,
+  // while the textured outer rim preserves the form of the moss and stone.
+  vec3 behind = environment(screenUv + normal.xy * vec2(.012, -.012));
+  float transmission = .34 + (1.0 - edge) * .20;
+  vec3 lit = material * (.48 + diffuse * .95);
+  vec3 color = mix(lit, behind * vec3(.90, 1.0, .94), transmission);
+  vec4 veins = texture(uVeins, textureUv);
+  float envelope = .12 + uAudioRms * .72 + uAudioBass * .36 + uPulse * .14;
+  float breathing = .82 + .18 * sin(uTime * .8);
+  // Flutter image samplers already contain premultiplied alpha.
+  vec3 emission = veins.rgb * envelope * breathing;
+  color += emission + vec3(.12, .33, .24) * edge * envelope * .24;
   vec3 halfLight = normalize(light + vec3(0.0, 0.0, 1.0));
-  color += vec3(.80, .79, .58) * pow(max(dot(normal, halfLight), 0.0), 18.0) * .07;
+  color += vec3(.55, .77, .57) * pow(max(dot(normal, halfLight), 0.0), 20.0) * .09;
   vec3 tint = .92 + .08 * cos((uHue - .5) * 6.2831853 + vec3(0.0, 2.1, 4.2));
   return color * tint;
 }
@@ -179,7 +189,7 @@ void main() {
     }
     if (hit > .5) {
       vec3 normal = surfaceNormal(position);
-      color = natureSurface(position, normal);
+      color = natureSurface(position, normal, uv);
     }
   }
   fragColor = vec4(clamp(color, vec3(0.0), vec3(1.0)), 1.0);

@@ -63,8 +63,10 @@ final class GeodeTextureRenderer {
                 require(eglSurface != EGL14.EGL_NO_SURFACE, "create texture surface");
                 require(EGL14.eglMakeCurrent(display, eglSurface, eglSurface, context), "activate EGL context");
                 EGL14.eglSwapInterval(display, 0);
-                NativeBindings.surfaceCreated(session, width, height);
+                // Mark before JNI: a partially created native scene still
+                // needs destruction while this EGL context is current.
                 sceneCreated = true;
+                NativeBindings.surfaceCreated(session, width, height);
                 ready = true;
                 main.post(onReady);
                 gl.post(frame);
@@ -108,17 +110,22 @@ final class GeodeTextureRenderer {
         gl.post(() -> {
             closed = true;
             gl.removeCallbacks(frame);
-            if (sceneCreated) NativeBindings.surfaceDestroyed(session);
-            if (display != EGL14.EGL_NO_DISPLAY) {
-                EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT);
-                if (eglSurface != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(display, eglSurface);
-                if (context != EGL14.EGL_NO_CONTEXT) EGL14.eglDestroyContext(display, context);
-                EGL14.eglTerminate(display);
-                EGL14.eglReleaseThread();
+            try {
+                if (sceneCreated) NativeBindings.surfaceDestroyed(session);
+            } catch (Throwable failure) {
+                main.post(() -> onError.accept(failure));
+            } finally {
+                if (display != EGL14.EGL_NO_DISPLAY) {
+                    EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT);
+                    if (eglSurface != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(display, eglSurface);
+                    if (context != EGL14.EGL_NO_CONTEXT) EGL14.eglDestroyContext(display, context);
+                    EGL14.eglTerminate(display);
+                    EGL14.eglReleaseThread();
+                }
+                surface.release();
+                thread.quitSafely();
+                main.post(() -> { texture.release(); complete.run(); });
             }
-            surface.release();
-            thread.quitSafely();
-            main.post(() -> { texture.release(); complete.run(); });
         });
     }
 

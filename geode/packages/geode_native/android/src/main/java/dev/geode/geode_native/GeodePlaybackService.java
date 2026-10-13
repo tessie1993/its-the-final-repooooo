@@ -69,6 +69,7 @@ public final class GeodePlaybackService extends Service {
     /** Must run before destroying the native player on engine detach. */
     public static void detach(Context context) {
         delegate = null;
+        GeodeNowPlayingWidget.clear(context);
         current = PlaybackInfo.empty();
         if (instance != null) instance.finishService();
         context.getApplicationContext().stopService(
@@ -81,6 +82,7 @@ public final class GeodePlaybackService extends Service {
      */
     public static void update(Context context, Map<?, ?> state) {
         current = PlaybackInfo.from(state);
+        GeodeNowPlayingWidget.update(context, state);
         if (delegate == null) return;
         if (!current.hasMedia) {
             if (instance != null) instance.finishService();

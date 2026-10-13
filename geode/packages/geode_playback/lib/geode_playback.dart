@@ -68,7 +68,9 @@ class GeodePlayer {
   void _publishState(PlayerState value) {
     if (_disposed) return;
     if (_state.playing == value.playing &&
-        _state.processingState == value.processingState) return;
+        _state.processingState == value.processingState) {
+      return;
+    }
     _state = value;
     _states.add(value);
   }
@@ -76,7 +78,7 @@ class GeodePlayer {
   void _fail(String message) {
     if (_disposed || message == _lastError) return;
     _lastError = message;
-    _errors.add(PlayerException(0, message));
+    _errors.add(PlayerException(0, message, null));
     _publishState(PlayerState(false, ProcessingState.idle));
   }
 
@@ -128,7 +130,7 @@ class GeodePlayer {
       final ready = await pending.future.timeout(const Duration(seconds: 30));
       if (_disposed || token != _token || ready == null) return null;
       if (ready.state == NativePlaybackState.error) {
-        throw PlayerException(0, ready.error ?? 'Native decoder failed');
+        throw PlayerException(0, ready.error ?? 'Native decoder failed', null);
       }
       if (initialPosition != null && initialPosition > Duration.zero) {
         await _native.seek(initialPosition);
@@ -190,10 +192,13 @@ class GeodePlayer {
     await _fallback!.setSpeed(value);
   }
 
-  Future<void> setEqualizer({required bool enabled, required List<double> bands}) async {
+  Future<void> setEqualizer({required bool enabled, required List<double> bands,
+    double bassBoost = 0, double loudnessDb = 0, double gainDb = 0,
+    bool crossfeed = false, bool limiter = true}) async {
     if (!usesNative || _disposed) return;
     await initialize();
-    await _native.setEqualizer(enabled: enabled, bands: bands);
+    await _native.setEqualizer(enabled: enabled, bands: bands, bassBoost: bassBoost,
+      loudnessDb: loudnessDb, gainDb: gainDb, crossfeed: crossfeed, limiter: limiter);
   }
 
   Future<Map<String, dynamic>> readTags(String path) async {

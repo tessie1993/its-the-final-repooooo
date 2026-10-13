@@ -54,11 +54,20 @@ extension _MusicPersistence on MusicController {
       pitch = 0;
       repeatMode = storedRepeat;
       shuffle = storedShuffle;
+      _shuffleOrder.reset(_queue.length, queueIndex);
       _resumePositionMs = math.max(0, storedPosition);
       position.value = Duration(milliseconds: _resumePositionMs);
       duration = Duration(milliseconds: currentTrack?.durationMs ?? 0);
       _savedEqEnabled = storedEqEnabled;
       _savedEqGains = storedEqGains;
+      bassBoost = ((data['bassBoost'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0).toDouble();
+      loudnessDb = ((data['loudnessDb'] as num?)?.toDouble() ?? 0).clamp(0.0, 10.0).toDouble();
+      preampDb = ((data['preampDb'] as num?)?.toDouble() ?? 0).clamp(-15.0, 15.0).toDouble();
+      crossfeed = data['crossfeed'] == true;
+      limiter = data['limiter'] != false;
+      final savedGainMode = data['replayGainMode'];
+      replayGainMode = const ['off', 'track', 'album'].contains(savedGainMode) ? savedGainMode as String : 'off';
+      sleepAtTrackEnd = data['sleepAtTrackEnd'] == true;
       initialized = true;
       unawaited(_initializeEqualizer());
       if (storedSleep != null) {
@@ -98,6 +107,9 @@ extension _MusicPersistence on MusicController {
       'positionMs': position.value.inMilliseconds,
       'equalizerEnabled': _savedEqEnabled, 'eqGains': List.of(_savedEqGains),
       'sleepEndsAt': sleepEndsAt?.millisecondsSinceEpoch,
+      'sleepAtTrackEnd': sleepAtTrackEnd,
+      'bassBoost': bassBoost, 'loudnessDb': loudnessDb, 'preampDb': preampDb,
+      'crossfeed': crossfeed, 'limiter': limiter, 'replayGainMode': replayGainMode,
     });
     // Keep writes ordered. A slower earlier write cannot replace newer edits.
     _saveSerial = _saveSerial.then((_) => _preferences.setString(_musicStorageKey, snapshot))

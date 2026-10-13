@@ -55,7 +55,7 @@ class _PresetLibraryScreenState extends State<PresetLibraryScreen> {
               Wrap(spacing: 10, runSpacing: 10, children: [
                 ChoiceChip(label: Text('Looks · ${state.looks.length}'), selected: !_native,
                   onSelected: (_) => setState(() => _native = false)),
-                ChoiceChip(label: Text('Native scenes · ${nativeSceneCatalog.length}'), selected: _native,
+                ChoiceChip(label: Text('Visual scenes · ${state.nativeVisuals.scenes.isEmpty ? nativeSceneCatalog.length : state.nativeVisuals.scenes.length}'), selected: _native,
                   onSelected: (_) => setState(() => _native = true)),
               ]),
               const SizedBox(height: 20),
