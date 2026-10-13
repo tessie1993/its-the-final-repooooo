@@ -1,0 +1,28 @@
+name: geode_export
+description: "Video, loop and studio export pipelines."
+version: 1.8.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+  flutter: ">=3.47.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  geode_native:
+    path: ../geode_native
+  geode_engine:
+    path: ../geode_engine
+  geode_data:
+    path: ../geode_data
+  geode_editor:
+    path: ../geode_editor
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
