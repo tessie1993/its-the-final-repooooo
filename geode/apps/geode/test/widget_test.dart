@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geode/app.dart';
+import 'package:geode/three_d/controls_3d.dart';
 
 final _captureKey = GlobalKey();
 
@@ -47,9 +48,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Make it yours.'), findsOneWidget);
     await _captureScreen(tester, 'settings');
-    await tester.tap(find.byType(Switch).first);
+    await tester.tap(find.byType(Switch3D).first);
     await tester.pump();
-    expect(tester.widget<Switch>(find.byType(Switch).first).value, isTrue);
+    expect(tester.widget<Switch3D>(find.byType(Switch3D).first).value, isTrue);
     final state = tester.widget<GeodeShell>(find.byType(GeodeShell)).state;
     expect(state.scene.effectiveReducedMotion, isTrue);
     await tester.tap(find.text('Visuals'));

@@ -5,6 +5,7 @@ import '../../state/geode_app_state.dart';
 import '../../theme/geode_theme.dart';
 import '../../three_d/eq_3d.dart';
 import 'visual_widgets.dart';
+import '../../three_d/controls_3d.dart';
 
 Future<void> showVisualSourceSheet(BuildContext context, GeodeAppState state) =>
   showModalBottomSheet<void>(context: context, isScrollControlled: true,
@@ -51,7 +52,7 @@ class _VisualSourceSheetState extends State<_VisualSourceSheet> {
               selected: native.audioSource == 'microphone',
               onTap: _busy || !native.available ? null : () => _select('microphone')),
             const SizedBox(height: 12),
-            if (_busy) const LinearProgressIndicator(),
+            if (_busy) const Progress3D(semanticsLabel: 'Switching audio source'),
             if (native.error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(native.error!, style: const TextStyle(color: GeodeTokens.accent))),
             if (native.available) ...[

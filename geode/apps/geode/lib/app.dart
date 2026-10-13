@@ -13,6 +13,8 @@ import 'screens/visualizer_screen.dart';
 import 'state/geode_app_state.dart';
 import 'theme/geode_theme.dart';
 import 'three_d/asset_3d.dart';
+import 'three_d/bevel_border.dart';
+import 'three_d/controls_3d.dart';
 
 class GeodeApp extends StatefulWidget {
   const GeodeApp({super.key, this.enableDeviceServices = true});
@@ -93,11 +95,13 @@ class GeodeShell extends StatelessWidget {
           : Column(children: [
               _header(context),
               Expanded(child: !state.initialized
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: Spinner3D())
                 : AnimatedSwitcher(
                     duration: MediaQuery.disableAnimationsOf(context)
                       ? Duration.zero : const Duration(milliseconds: 320),
                     switchInCurve: Curves.easeOutCubic, switchOutCurve: Curves.easeInCubic,
+                    // Destinations swing past each other on a 3D hinge.
+                    transitionBuilder: (child, animation) => Swing3DTransition(animation: animation, child: child),
                     child: KeyedSubtree(key: ValueKey(state.destination),
                       child: switch (state.destination) {
                         1 => MusicLibraryScreen(state: state),

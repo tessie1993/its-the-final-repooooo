@@ -12,6 +12,7 @@ import 'lyrics_sheet.dart';
 import 'music_widgets.dart';
 import 'queue_sheet.dart';
 import 'track_details.dart';
+import '../../three_d/controls_3d.dart';
 
 Future<void> showNowPlaying(BuildContext context, GeodeAppState state) =>
   showGelRoute<void>(context, NowPlayingScreen(state: state), name: '/music/playing');
@@ -74,7 +75,7 @@ class NowPlayingScreen extends StatelessWidget {
                   onPressed: music.busy || music.loading ? null : music.previous),
                 SizedBox(width: compact ? 64 : 78, height: compact ? 64 : 78, child: GelPanel(radius: 39,
                   padding: EdgeInsets.zero, highlighted: true, pearl: true, child: music.busy || music.loading
-                    ? const Center(child: SizedBox(width: 27, height: 27, child: CircularProgressIndicator(strokeWidth: 2)))
+                    ? const Center(child: Spinner3D(size: 27))
                     : IconButton(iconSize: 38, tooltip: music.playing ? 'Pause' : 'Play',
                         onPressed: music.togglePlay,
                         icon: Icon(music.playing ? Icons.pause_rounded : Icons.play_arrow_rounded)))),

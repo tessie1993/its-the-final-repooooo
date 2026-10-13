@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
+import '../three_d/bevel_border.dart';
 import '../three_d/depth_3d.dart';
 
 /// One material vocabulary shared by the scene's crisp, readable controls.
@@ -12,7 +14,9 @@ abstract final class GeodeTokens {
   static const radius = 28.0;
   static const minTarget = 48.0;
 
-  static ThemeData get theme => ThemeData(
+  // Built once: its state-resolving properties are closures, which never compare equal,
+  // so a fresh ThemeData per build would restart the theme animation.
+  static final ThemeData theme = ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         scaffoldBackgroundColor: deep,
@@ -81,29 +85,32 @@ abstract final class GeodeTokens {
           selectedColor: const Color(0xFF607550),
           disabledColor: const Color(0xFF263A2C),
           side: const BorderSide(color: Color(0xFF71865B)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          // Chips stand as small stone tablets and sink in when selected or pressed.
+          shape: WidgetStateOutlinedBorder.resolveWith((states) => StoneBevelBorder(
+            borderRadius: const BorderRadius.all(Radius.circular(24)),
+            depth: states.contains(WidgetState.selected) || states.contains(WidgetState.pressed) ? -2.5 : 2.5)),
           labelStyle: const TextStyle(color: ink, fontSize: 12),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         ),
         dialogTheme: DialogThemeData(
           backgroundColor: const Color(0xFF233A2C),
           surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30),
-            side: const BorderSide(color: Color(0xFF6B7C53))),
+          shape: const StoneBevelBorder(borderRadius: BorderRadius.all(Radius.circular(30)),
+            side: BorderSide(color: Color(0xFF6B7C53)), depth: 5),
         ),
         bottomSheetTheme: const BottomSheetThemeData(
           backgroundColor: Color(0xFF1F3528), surfaceTintColor: Colors.transparent,
           dragHandleColor: Color(0xFF9BAD82),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-            side: BorderSide(color: Color(0xFF65794D))),
+          shape: StoneBevelBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            side: BorderSide(color: Color(0xFF65794D)), depth: 3),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true, fillColor: const Color(0xFF253F2E),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20),
+          border: CarvedInputBorder(borderRadius: BorderRadius.circular(20),
             borderSide: const BorderSide(color: Color(0xFF65794D))),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20),
+          enabledBorder: CarvedInputBorder(borderRadius: BorderRadius.circular(20),
             borderSide: const BorderSide(color: Color(0xFF65794D))),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(20),
+          focusedBorder: CarvedInputBorder(borderRadius: BorderRadius.circular(20),
             borderSide: const BorderSide(color: accent)),
         ),
         switchTheme: SwitchThemeData(
@@ -113,5 +120,39 @@ abstract final class GeodeTokens {
               states.contains(WidgetState.selected) ? accent : ice.withValues(alpha: .14)),
           trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
         ),
+        // Buttons, cards, menus, tooltips and snack bars share the stone-tablet bevel;
+        // buttons sink into the surface while pressed.
+        filledButtonTheme: FilledButtonThemeData(style: ButtonStyle(
+          shape: WidgetStateProperty.resolveWith((states) => _tablet(states, 26, 3)))),
+        outlinedButtonTheme: OutlinedButtonThemeData(style: ButtonStyle(
+          shape: WidgetStateProperty.resolveWith((states) => _tablet(states, 26, 2)))),
+        cardTheme: const CardThemeData(shape: StoneBevelBorder(
+          borderRadius: BorderRadius.all(Radius.circular(24)), depth: 3)),
+        popupMenuTheme: const PopupMenuThemeData(shape: StoneBevelBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+          side: BorderSide(color: Color(0xFF5E7049)), depth: 3)),
+        dropdownMenuTheme: const DropdownMenuThemeData(menuStyle: MenuStyle(
+          shape: WidgetStatePropertyAll(StoneBevelBorder(borderRadius: BorderRadius.all(Radius.circular(20)),
+            side: BorderSide(color: Color(0xFF5E7049)), depth: 3)))),
+        tooltipTheme: const TooltipThemeData(
+          decoration: ShapeDecoration(color: Color(0xF0233A2C), shape: StoneBevelBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)), depth: 2)),
+          textStyle: TextStyle(color: ink, fontSize: 12)),
+        snackBarTheme: const SnackBarThemeData(shape: StoneBevelBorder(
+          borderRadius: BorderRadius.all(Radius.circular(18)), depth: 3)),
+        // Pages swing in on a 3D hinge; iOS keeps its native edge-swipe transition.
+        pageTransitionsTheme: const PageTransitionsTheme(builders: {
+          TargetPlatform.android: Swing3DPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: Swing3DPageTransitionsBuilder(),
+          TargetPlatform.linux: Swing3DPageTransitionsBuilder(),
+          TargetPlatform.windows: Swing3DPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+        }),
       );
+
+  static StoneBevelBorder _tablet(Set<WidgetState> states, double radius, double depth) =>
+    StoneBevelBorder(borderRadius: BorderRadius.all(Radius.circular(radius)),
+      depth: states.contains(WidgetState.disabled) ? 0
+        : states.contains(WidgetState.pressed) ? -depth * .8 : depth);
 }

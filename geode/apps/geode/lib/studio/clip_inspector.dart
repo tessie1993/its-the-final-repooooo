@@ -5,6 +5,7 @@ import 'keyframe_editor.dart';
 import 'studio_controller.dart';
 import 'studio_dialogs.dart';
 import '../three_d/asset_3d.dart';
+import '../three_d/controls_3d.dart';
 
 class ClipInspector extends StatelessWidget {
   const ClipInspector({super.key, required this.studio, required this.pausePreview});
@@ -59,7 +60,7 @@ class ClipInspector extends StatelessWidget {
         IconButton(tooltip: 'Delete clip', onPressed: locked ? null : () => _edit(studio.deleteClip),
           icon: const Icon(Icons.delete_outline_rounded)),
       ]),
-      SwitchListTile.adaptive(contentPadding: EdgeInsets.zero, title: const Text('Clip enabled'),
+      SwitchTile3D(contentPadding: EdgeInsets.zero, title: const Text('Clip enabled'),
         value: clip.enabled, onChanged: locked ? null : (value) => _edit(() => studio.updateClip(enabled: value))),
       if (clip.lane == 'visual') ...[
         const SizedBox(height: 8),

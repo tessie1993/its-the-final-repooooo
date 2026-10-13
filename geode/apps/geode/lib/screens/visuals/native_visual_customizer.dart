@@ -4,6 +4,7 @@ import '../../state/geode_app_state.dart';
 import '../../state/visual_parameters.dart';
 import '../../theme/geode_theme.dart';
 import 'visual_widgets.dart';
+import '../../three_d/controls_3d.dart';
 
 class NativeVisualCustomizer extends StatelessWidget {
   const NativeVisualCustomizer({super.key, required this.state});
@@ -50,7 +51,7 @@ class NativeVisualCustomizer extends StatelessWidget {
   Widget _control(BuildContext context, VisualParameter parameter) {
     final value = state.visualParameter(parameter);
     if (parameter.toggle) {
-      return SwitchListTile(contentPadding: EdgeInsets.zero,
+      return SwitchTile3D(contentPadding: EdgeInsets.zero,
       title: Text(parameter.label), value: value >= .5,
       onChanged: (enabled) => state.setVisualParameter(parameter, enabled ? 1 : 0));
     }

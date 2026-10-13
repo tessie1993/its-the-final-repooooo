@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../state/geode_app_state.dart';
 import 'music_widgets.dart';
+import '../../three_d/controls_3d.dart';
 
 Future<void> showPlaylistTracks(BuildContext context, GeodeAppState state, String playlistId) =>
   showModalBottomSheet<void>(context: context, isScrollControlled: true,
@@ -47,14 +48,17 @@ class _PlaylistTracksState extends State<_PlaylistTracks> {
               else SliverPadding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 sliver: SliverList.builder(itemCount: tracks.length, itemBuilder: (context, index) {
                   final track = tracks[index];
-                  return CheckboxListTile(value: selected.contains(track.id),
+                  final checked = selected.contains(track.id);
+                  void toggle(bool value) {
+                    if (value) { music.addToPlaylist(widget.playlistId, track.id); }
+                    else { music.removeFromPlaylist(widget.playlistId, track.id); }
+                  }
+                  return MergeSemantics(child: ListTile(
                     title: Text(track.title, maxLines: 1, overflow: TextOverflow.ellipsis),
                     subtitle: Text(track.artist, maxLines: 1, overflow: TextOverflow.ellipsis),
-                    secondary: MusicArtwork(size: 44, radius: 15, track: track),
-                    onChanged: (value) {
-                      if (value ?? false) { music.addToPlaylist(widget.playlistId, track.id); }
-                      else { music.removeFromPlaylist(widget.playlistId, track.id); }
-                    });
+                    leading: MusicArtwork(size: 44, radius: 15, track: track),
+                    trailing: Check3D(value: checked, onChanged: toggle),
+                    onTap: () => toggle(!checked)));
                 })),
             ])));
     });

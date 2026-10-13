@@ -5,6 +5,7 @@ import '../../scene/gel_float.dart';
 import '../../theme/geode_theme.dart';
 import '../../three_d/eq_3d.dart';
 import 'music_widgets.dart';
+import '../../three_d/controls_3d.dart';
 
 class AudioSettingsScreen extends StatelessWidget {
   const AudioSettingsScreen({super.key, required this.state});
@@ -49,7 +50,7 @@ class AudioSettingsScreen extends StatelessWidget {
                 const Icon(Icons.graphic_eq_rounded, color: GeodeTokens.ice),
                 const SizedBox(width: 12),
                 Expanded(child: Text('Equalizer', style: text.titleLarge)),
-                Switch(value: music.equalizerAvailable && music.equalizerEnabled,
+                Switch3D(value: music.equalizerAvailable && music.equalizerEnabled,
                   onChanged: music.equalizerAvailable ? music.setEqualizerEnabled : null),
               ]),
               const SizedBox(height: 8),
@@ -116,11 +117,11 @@ class AudioSettingsScreen extends StatelessWidget {
                 _slider(context, title: 'Preamp', valueLabel: '${music.preampDb > 0 ? '+' : ''}${music.preampDb.toStringAsFixed(1)} dB',
                   icon: Icons.tune_rounded, value: music.preampDb, min: -15, max: 15,
                   divisions: 60, onChanged: (value) => music.setSoundEffects(preamp: value)),
-                SwitchListTile(contentPadding: EdgeInsets.zero,
+                SwitchTile3D(contentPadding: EdgeInsets.zero,
                   title: const Text('Headphone crossfeed'),
                   subtitle: const Text('Blend a little of each stereo channel for a relaxed headphone sound.'),
                   value: music.crossfeed, onChanged: (value) => music.setSoundEffects(headphoneCrossfeed: value)),
-                SwitchListTile(contentPadding: EdgeInsets.zero,
+                SwitchTile3D(contentPadding: EdgeInsets.zero,
                   title: const Text('Peak limiter'), subtitle: const Text('Keep boosted peaks from clipping.'),
                   value: music.limiter, onChanged: (value) => music.setSoundEffects(peakLimiter: value)),
                 const Divider(height: 28),

@@ -5,6 +5,7 @@ import '../../theme/geode_theme.dart';
 import 'visual_widgets.dart';
 import '../../three_d/asset_3d.dart';
 import '../../three_d/crystal_viewer.dart';
+import '../../three_d/controls_3d.dart';
 
 class VisualCustomizerScreen extends StatefulWidget {
   const VisualCustomizerScreen({super.key, required this.state});
@@ -199,5 +200,5 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
     children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(title, style: Theme.of(context).textTheme.titleSmall), const SizedBox(height: 5),
       Text(detail, style: Theme.of(context).textTheme.bodySmall),
-    ])), const SizedBox(width: 14), Semantics(label: title, child: Switch(value: value, onChanged: onChanged))]);
+    ])), const SizedBox(width: 14), Semantics(label: title, child: Switch3D(value: value, onChanged: onChanged))]);
 }

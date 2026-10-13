@@ -9,6 +9,7 @@ import 'music_collection_screen.dart';
 import 'music_widgets.dart';
 import 'now_playing_screen.dart';
 import 'track_actions.dart';
+import '../../three_d/controls_3d.dart';
 
 class MusicLibraryScreen extends StatefulWidget {
   const MusicLibraryScreen({super.key, required this.state});
@@ -60,7 +61,7 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
           SliverPadding(padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
             sliver: SliverToBoxAdapter(child: _header(context, music))),
           if (!music.initialized && music.loading) const SliverToBoxAdapter(child: Padding(
-            padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator())))
+            padding: EdgeInsets.all(32), child: Center(child: Spinner3D())))
           else if (!music.initialized) SliverPadding(padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
             sliver: SliverToBoxAdapter(child: MusicEmpty(title: 'Let’s reopen your library',
               message: 'Your saved collection has been kept. Try loading it again.',
@@ -130,7 +131,7 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
         ]))),
       if (music.busy) ...[
         const SizedBox(height: 10),
-        LinearProgressIndicator(value: music.importProgress),
+        Progress3D(value: music.importProgress, semanticsLabel: 'Import progress'),
         Align(alignment: Alignment.centerRight, child: TextButton(
           onPressed: music.cancelImport, child: const Text('Cancel import'))),
       ] else Align(alignment: Alignment.centerRight, child: TextButton.icon(
