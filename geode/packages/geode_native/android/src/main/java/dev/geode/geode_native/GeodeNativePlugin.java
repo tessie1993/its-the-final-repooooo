@@ -14,6 +14,7 @@ import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -57,6 +58,8 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
     private boolean microphoneSelected;
     private MethodChannel.Result microphonePermission;
     private static final int MICROPHONE_PERMISSION = 7302;
+    private static final int NOTIFICATION_PERMISSION = 7303;
+    private boolean notificationPermissionAsked;
     private GeodeVideoExporter exporter;
     private long handle;
     private long requestedToken = -1;
@@ -148,7 +151,7 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
                 case "readTags": readTags(requiredString(call, "uri"), result); return;
                 case "publishPlaybackState":
                     GeodePlaybackService.update(context, (Map<?, ?>) call.arguments); break;
-                case "play": play(); break;
+                case "play": requestNotificationPermission(); play(); break;
                 case "pause": pause(); break;
                 case "stop": ++openRequest; ++nextRequest; NativeBindings.command(handle, 2, 0, 0); abandonFocus(); break;
                 case "seek": NativeBindings.command(handle, 3, number(call, "positionMs", 0).longValue(), 0); break;
@@ -384,7 +387,17 @@ public final class GeodeNativePlugin implements FlutterPlugin, MethodChannel.Met
         microphoneSelected = true;
     }
 
+    /** Android 13+ hides the media notification without POST_NOTIFICATIONS; ask once, on first play. */
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || notificationPermissionAsked || activity == null) return;
+        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return;
+        notificationPermissionAsked = true;
+        activity.requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_PERMISSION);
+    }
+
     @Override public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
+        // Playback continues either way; a granted permission shows the notification on the next state publish.
+        if (requestCode == NOTIFICATION_PERMISSION) return true;
         if (requestCode != MICROPHONE_PERMISSION) return false;
         MethodChannel.Result result = microphonePermission;
         microphonePermission = null;

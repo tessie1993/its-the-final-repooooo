@@ -33,6 +33,7 @@ dependencies:
   flame_3d: ^0.3.2
   ditredi: ^2.0.2
   model_viewer_plus: ^1.10.0
+  flame: ^1.38.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

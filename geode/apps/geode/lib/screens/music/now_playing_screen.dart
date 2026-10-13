@@ -6,11 +6,13 @@ import '../../media/music_controller.dart';
 import '../../scene/gel_float.dart';
 import '../../state/geode_app_state.dart';
 import '../../theme/geode_theme.dart';
+import '../../three_d/medallion_3d.dart';
 import 'audio_settings_screen.dart';
 import 'lyrics_sheet.dart';
 import 'music_widgets.dart';
 import 'queue_sheet.dart';
 import 'track_details.dart';
+import '../../three_d/controls_3d.dart';
 
 Future<void> showNowPlaying(BuildContext context, GeodeAppState state) =>
   showGelRoute<void>(context, NowPlayingScreen(state: state), name: '/music/playing');
@@ -42,8 +44,12 @@ class NowPlayingScreen extends StatelessWidget {
               Text('YOUR MUSIC, NATURALLY', style: text.labelSmall),
               const SizedBox(height: 25),
               GelFloat(controller: state.scene, anchor: const Offset(.5, .4), weight: 2.4,
-                child: PlayerOrb(controller: state.scene, playing: music.playing,
-                  enableNativeScene: state.enableDeviceServices)),
+                child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 360),
+                  child: AspectRatio(aspectRatio: 1 / .94, child: Medallion3D(
+                    music: music, nature: state.scene,
+                    semanticsLabel: 'Record for ${track.title}. Drag the bead ring to seek.',
+                    fallback: PlayerOrb(controller: state.scene, playing: music.playing,
+                      enableNativeScene: state.enableDeviceServices))))),
               const SizedBox(height: 30),
               Row(children: [
                 MusicArtwork(size: 62, radius: 20, track: track),
@@ -69,7 +75,7 @@ class NowPlayingScreen extends StatelessWidget {
                   onPressed: music.busy || music.loading ? null : music.previous),
                 SizedBox(width: compact ? 64 : 78, height: compact ? 64 : 78, child: GelPanel(radius: 39,
                   padding: EdgeInsets.zero, highlighted: true, pearl: true, child: music.busy || music.loading
-                    ? const Center(child: SizedBox(width: 27, height: 27, child: CircularProgressIndicator(strokeWidth: 2)))
+                    ? const Center(child: Spinner3D(size: 27))
                     : IconButton(iconSize: 38, tooltip: music.playing ? 'Pause' : 'Play',
                         onPressed: music.togglePlay,
                         icon: Icon(music.playing ? Icons.pause_rounded : Icons.play_arrow_rounded)))),

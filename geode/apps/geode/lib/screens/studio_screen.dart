@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../state/geode_app_state.dart';
 import '../studio/project_browser.dart';
 import '../studio/studio_editor.dart';
+import '../three_d/controls_3d.dart';
 
 class StudioScreen extends StatelessWidget {
   const StudioScreen({super.key, required this.state});
@@ -13,7 +14,7 @@ class StudioScreen extends StatelessWidget {
     builder: (context, _) {
       final studio = state.studio;
       if (!studio.initialized) {
-        return const Center(child: CircularProgressIndicator());
+        return const Center(child: Spinner3D());
       }
       return SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 40),

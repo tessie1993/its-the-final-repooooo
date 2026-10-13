@@ -3,7 +3,9 @@ import 'package:geode_engine/geode_engine.dart';
 import '../../components/components.dart';
 import '../../state/geode_app_state.dart';
 import '../../theme/geode_theme.dart';
+import '../../three_d/eq_3d.dart';
 import 'visual_widgets.dart';
+import '../../three_d/controls_3d.dart';
 
 Future<void> showVisualSourceSheet(BuildContext context, GeodeAppState state) =>
   showModalBottomSheet<void>(context: context, isScrollControlled: true,
@@ -50,7 +52,7 @@ class _VisualSourceSheetState extends State<_VisualSourceSheet> {
               selected: native.audioSource == 'microphone',
               onTap: _busy || !native.available ? null : () => _select('microphone')),
             const SizedBox(height: 12),
-            if (_busy) const LinearProgressIndicator(),
+            if (_busy) const Progress3D(semanticsLabel: 'Switching audio source'),
             if (native.error != null) Padding(padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(native.error!, style: const TextStyle(color: GeodeTokens.accent))),
             if (native.available) ...[
@@ -60,7 +62,8 @@ class _VisualSourceSheetState extends State<_VisualSourceSheet> {
                   Row(children: [const Expanded(child: Text('Live sound', style: TextStyle(fontWeight: FontWeight.w600))),
                     Text(frame.rms > .005 ? 'Listening' : 'Quiet', style: const TextStyle(color: GeodeTokens.accent))]),
                   const SizedBox(height: 18),
-                  _meter('Bass', frame.bass), _meter('Mid', frame.mid), _meter('Treble', frame.treble),
+                  Meters3D(frame: frame, fallback: Column(crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [_meter('Bass', frame.bass), _meter('Mid', frame.mid), _meter('Treble', frame.treble)])),
                 ]))),
             ],
             const SizedBox(height: 22),

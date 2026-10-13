@@ -29,6 +29,17 @@ const nativeSceneCatalog = <({String id, String name})>[
   (id: 'spiral_eye', name: 'Spiral eye'), (id: 'blacklight_bloom', name: 'Blacklight bloom'),
   (id: 'fractal_temple', name: 'Fractal temple'), (id: 'curl_bloom', name: 'Curl bloom'),
   (id: 'nectar_flow', name: 'Nectar flow'),
+  // GPU fluid dynamics (core/viz/fluid): Navier-Stokes dye and velocity fields.
+  (id: 'fluid_ink', name: 'Ink in water'), (id: 'fluid_oilslick', name: 'Oil slick'),
+  (id: 'fluid_neon', name: 'Neon fluid'), (id: 'fluid_chrome', name: 'Liquid chrome'),
+  (id: 'fluid_smoke', name: 'Smoke'), (id: 'fluid_lava', name: 'Molten flow'),
+  (id: 'fluid_marble', name: 'Marbling'), (id: 'fluid_aurora', name: 'Aurora fluid'),
+  // Particle agents (physarum): thousands of sensing, depositing particles.
+  (id: 'myco_polycephalum', name: 'Slime mould'), (id: 'myco_rivals', name: 'Rival colonies'),
+  (id: 'myco_symbiosis', name: 'Symbiosis'), (id: 'myco_predator', name: 'Predator and prey'),
+  (id: 'myco_ghosts', name: 'Ghost trails'), (id: 'myco_circuit', name: 'Circuit growth'),
+  (id: 'myco_silkroad', name: 'Silk road'), (id: 'myco_sporestorm', name: 'Spore storm'),
+  (id: 'myco_capillary', name: 'Capillaries'), (id: 'myco_frostvein', name: 'Frost veins'),
 ];
 
 class NativeSceneCatalog extends StatelessWidget {

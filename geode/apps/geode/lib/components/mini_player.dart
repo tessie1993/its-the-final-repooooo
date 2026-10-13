@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../screens/music/music_widgets.dart';
 import '../state/geode_app_state.dart';
+import '../three_d/medallion_3d.dart';
 import 'gel_panel.dart';
+import '../three_d/controls_3d.dart';
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({super.key, required this.state, required this.onOpen});
@@ -16,7 +18,9 @@ class MiniPlayer extends StatelessWidget {
       return GelPanel(radius: 23, padding: const EdgeInsets.fromLTRB(10, 4, 4, 0),
         opacity: .9, child: Column(mainAxisSize: MainAxisSize.min, children: [
           Row(children: [
-            const MusicArtwork(size: 42, radius: 14),
+            SizedBox.square(dimension: 42, child: Medallion3D(compact: true,
+              music: music, nature: state.scene,
+              fallback: MusicArtwork(size: 42, radius: 14, track: track))),
             const SizedBox(width: 10),
             Expanded(child: Semantics(button: true, label: 'Open now playing',
               child: InkWell(onTap: onOpen, borderRadius: BorderRadius.circular(12),
@@ -38,11 +42,11 @@ class MiniPlayer extends StatelessWidget {
               icon: const Icon(Icons.skip_next_rounded)),
           ]),
           ValueListenableBuilder<Duration>(valueListenable: music.position,
-            builder: (_, position, child) => ClipRRect(borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(minHeight: 2,
+            builder: (_, position, child) => Padding(padding: const EdgeInsets.only(right: 6, bottom: 2),
+              child: Progress3D(height: 7, semanticsLabel: 'Track position',
                 value: music.duration.inMilliseconds > 0
                   ? (position.inMilliseconds / music.duration.inMilliseconds).clamp(0.0, 1.0)
-                  : 0, backgroundColor: Colors.white10))),
+                  : 0))),
         ]));
     });
 }

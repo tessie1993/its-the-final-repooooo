@@ -10,6 +10,7 @@ import 'library_screen.dart';
 import 'music/audio_settings_screen.dart';
 import 'visuals/visual_customizer_screen.dart';
 import '../three_d/asset_3d.dart';
+import '../three_d/controls_3d.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, required this.state});
@@ -223,7 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         Text(state.error!, style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 8),
         TextButton.icon(onPressed: _retrying ? null : _retry,
-          icon: _retrying ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+          icon: _retrying ? const Spinner3D(size: 16)
             : const Icon(Icons.refresh_rounded), label: Text(_retrying ? 'Retrying…' : 'Retry preferences')),
       ])),
     ]));
@@ -256,7 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(title, style: Theme.of(context).textTheme.titleSmall), const SizedBox(height: 5),
         Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-      ])), const SizedBox(width: 10), Semantics(label: title, child: Switch(value: value, onChanged: onChanged)),
+      ])), const SizedBox(width: 10), Semantics(label: title, child: Switch3D(value: value, onChanged: onChanged)),
     ]));
 
   Widget _eyebrow(BuildContext context, String text) => Text(text.toUpperCase(),

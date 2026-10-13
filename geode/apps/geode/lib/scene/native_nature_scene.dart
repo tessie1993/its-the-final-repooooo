@@ -7,6 +7,7 @@ import 'package:vector_math/vector_math.dart' as vm;
 
 import '../three_d/geode_materials.dart';
 import '../three_d/geode_meshes.dart';
+import '../three_d/nature_physics.dart';
 import 'geode_scene_controller.dart';
 import 'nature_geometry.dart';
 
@@ -32,7 +33,7 @@ class NativeNatureScene {
 
   /// Shell destination (0 visuals, 1 music, 2 studio, 3 settings, -1 immersive).
   int destination = 0;
-  double _lastTime = -1;
+  double _lastTime = -1, _physicsTime = -1;
 
   // Camera stations: (eye, target) per destination.
   static final _stations = <int, (vm.Vector3, vm.Vector3)>{
@@ -43,7 +44,14 @@ class NativeNatureScene {
     3: (vm.Vector3(.2, 2.3, -5.6), vm.Vector3(0, -.85, .6)),
   };
 
-  final _pool = fs.Node(name: 'Still pool');
+  final _pool = fs.Node(name: 'Pool');
+  final _water = WaterSurface();
+  late final _particles = NatureParticles(softDotTexture());
+  final _pads = <fs.Node>[];
+  double _lastRipple = -1, _lastRain = -1;
+  final _rain = math.Random(5);
+
+  static final _poolCentre = vm.Vector3(0, -2.55, 1.2);
   final _stones = <fs.Node>[];
   final _ferns = <fs.Node>[];
 
@@ -137,10 +145,19 @@ class NativeNatureScene {
     }
     scene..add(_crystals)..add(_jade);
 
-    _pool.add(fs.Node(name: 'Water', mesh: fs.Mesh(fs.DiscGeometry(radius: 3.2, segments: 64),
-      GeodeMaterials.water())));
-    _pool.position = vm.Vector3(0, -2.55, 1.2);
+    _pool.add(fs.Node(name: 'Water', mesh: fs.Mesh(_water.geometry, GeodeMaterials.water())));
+    _pool.position = _poolCentre;
     scene.add(_pool);
+    // Lily pads ride the simulated surface (buoyancy follows height and slope).
+    final pad = fs.DiscGeometry(radius: .26, segments: 20);
+    final padMaterial = GeodeMaterials.jade()..roughnessFactor = .55..clearcoat = .4;
+    for (var i = 0; i < 3; i++) {
+      final node = fs.Node(name: 'Lily pad $i', mesh: fs.Mesh(pad, padMaterial));
+      _pads.add(node);
+      scene.add(node);
+    }
+    scene.add(_particles.pollenNode..position = vm.Vector3(0, -.6, .8));
+    for (final node in _particles.splashNodes) { scene.add(node); }
     final pebble = GeodeMeshes.pebble();
     final smallPebble = GeodeMeshes.pebble(seed: 21, segments: 24, rings: 14);
     // (x, y, z, scale, material, yaw): stones around the pool's near rim.
@@ -202,8 +219,49 @@ class NativeNatureScene {
 
   late final List<double> _fernSway = List.filled(_ferns.length, 0);
 
+  /// Feeds new touch and beat ripples into the water, adds sparse rain on strong
+  /// bass, then steps the fluid and particle physics. Frozen under reduced motion.
+  void _stepPhysics(GeodeSceneController controller, double dt) {
+    if (controller.effectiveReducedMotion || dt <= 0) return;
+    for (final ripple in controller.ripples) {
+      if (ripple.startedAt <= _lastRipple) continue;
+      _lastRipple = ripple.startedAt;
+      // Screen x spans the pool's width; lower on screen is nearer the camera.
+      final x = (ripple.position.dx * 2 - 1) * _water.radius * .85;
+      final z = ((.62 - ripple.position.dy) * 4.2).clamp(-_water.radius * .8, _water.radius * .8).toDouble();
+      final strength = ripple.strength.clamp(0.0, 1.6).toDouble();
+      _water.disturb(x, z, 1.4 * strength);
+      _particles.splash(_poolCentre + vm.Vector3(x, .05, z), count: (18 + 34 * strength).round());
+    }
+    final time = controller.time;
+    if (controller.audioBass > .55 && time - _lastRain > .28) {
+      _lastRain = time;
+      final angle = _rain.nextDouble() * math.pi * 2, distance = math.sqrt(_rain.nextDouble()) * _water.radius * .8;
+      _water.disturb(math.cos(angle) * distance, math.sin(angle) * distance, .5 * controller.audioBass, spread: .18);
+    }
+    _water.step(dt);
+    _particles.step(dt, density: controller.particlesEnabled ? controller.particleDensity : 0);
+    const pads = [(-1.1, .4, .0), (.9, 1.3, 2.1), (.2, 2.4, 4.2)];
+    for (var i = 0; i < _pads.length; i++) {
+      final (x, z, phase) = pads[i];
+      final drift = math.sin(time * .07 + phase) * .25;
+      final px = x + drift, pz = z + math.cos(time * .05 + phase) * .2;
+      final (sx, sz) = _water.slopeAt(px, pz);
+      _pads[i].mutateLocalTransform((matrix) => matrix
+        ..setIdentity()
+        ..translateByVector3(_poolCentre + vm.Vector3(px, _water.heightAt(px, pz) + .015, pz))
+        ..rotateX(sz * 1.6)
+        ..rotateZ(-sx * 1.6)
+        ..rotateY(time * .03 + phase));
+    }
+  }
+
   void update(GeodeSceneController controller, {double aspect = .5}) {
+    final now = controller.time;
+    final dt = _physicsTime < 0 ? 0.0 : (now - _physicsTime).clamp(0.0, .1).toDouble();
+    _physicsTime = now;
     _glideCamera(controller, aspect);
+    _stepPhysics(controller, dt);
     final t = controller.effectiveReducedMotion ? 0.0 : controller.time;
     final tilt = controller.effectiveReducedMotion ? Offset.zero : controller.tilt;
     final wake = controller.effectiveReducedMotion ? 0.0 : controller.pulse;

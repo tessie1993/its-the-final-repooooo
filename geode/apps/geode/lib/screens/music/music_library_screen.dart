@@ -4,9 +4,12 @@ import '../../components/gel_route.dart';
 import '../../media/music_controller.dart';
 import '../../scene/gel_float.dart';
 import '../../state/geode_app_state.dart';
+import '../../three_d/carousel_3d.dart';
 import 'music_collection_screen.dart';
 import 'music_widgets.dart';
+import 'now_playing_screen.dart';
 import 'track_actions.dart';
+import '../../three_d/controls_3d.dart';
 
 class MusicLibraryScreen extends StatefulWidget {
   const MusicLibraryScreen({super.key, required this.state});
@@ -58,14 +61,17 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
           SliverPadding(padding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
             sliver: SliverToBoxAdapter(child: _header(context, music))),
           if (!music.initialized && music.loading) const SliverToBoxAdapter(child: Padding(
-            padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator())))
+            padding: EdgeInsets.all(32), child: Center(child: Spinner3D())))
           else if (!music.initialized) SliverPadding(padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
             sliver: SliverToBoxAdapter(child: MusicEmpty(title: 'Let’s reopen your library',
               message: 'Your saved collection has been kept. Try loading it again.',
               actionLabel: 'Retry', action: music.initialize, icon: Icons.refresh_rounded)))
           else if (count == 0) SliverPadding(padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
             sliver: SliverToBoxAdapter(child: _empty(context, music, query)))
-          else SliverPadding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+          else ...[
+            SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.only(bottom: 8),
+              child: Carousel3D(items: _carouselItems(music, tracks, groups, groupNames, playlists)))),
+            SliverPadding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
             sliver: SliverList.builder(itemCount: count, itemBuilder: (context, index) {
               if (_tab == 1 || _tab == 2) {
                 final name = groupNames[index];
@@ -80,10 +86,28 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
               }
               return MusicTrackTile(state: widget.state, track: tracks[index], from: tracks);
             })),
+          ],
         ]),
       ));
     },
   );
+
+  List<CarouselItem> _carouselItems(MusicController music, List<MusicTrack> tracks,
+      Map<String, List<MusicTrack>> groups, List<String> groupNames, List<MusicPlaylist> playlists) {
+    if (_tab == 1 || _tab == 2) {
+      return [for (final name in groupNames) (cover: groups[name]!.first, title: name,
+        open: () => _openCollection(name, _tab == 1 ? 'album' : 'artist', name))];
+    }
+    if (_tab == 3) {
+      final byId = {for (final track in music.tracks) track.id: track};
+      return [for (final playlist in playlists) (
+        cover: playlist.trackIds.map((id) => byId[id]).nonNulls.firstOrNull,
+        title: playlist.name,
+        open: () => _openCollection(playlist.name, 'playlist', playlist.id))];
+    }
+    return [for (final track in tracks) (cover: track, title: '${track.title} · ${track.artist}',
+      open: () { music.playTrack(track, from: tracks); showNowPlaying(context, widget.state); })];
+  }
 
   Widget _header(BuildContext context, MusicController music) {
     final text = Theme.of(context).textTheme;
@@ -107,7 +131,7 @@ class _MusicLibraryScreenState extends State<MusicLibraryScreen> {
         ]))),
       if (music.busy) ...[
         const SizedBox(height: 10),
-        LinearProgressIndicator(value: music.importProgress),
+        Progress3D(value: music.importProgress, semanticsLabel: 'Import progress'),
         Align(alignment: Alignment.centerRight, child: TextButton(
           onPressed: music.cancelImport, child: const Text('Cancel import'))),
       ] else Align(alignment: Alignment.centerRight, child: TextButton.icon(

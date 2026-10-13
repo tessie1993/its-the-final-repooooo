@@ -8,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../components/components.dart';
 import 'studio_models.dart';
+import '../three_d/controls_3d.dart';
 
 /// The same native compositor supplies preview frames and exported video frames.
 class StudioPreview extends StatefulWidget {
@@ -87,7 +88,7 @@ class _StudioPreviewState extends State<StudioPreview> {
         if (_image != null) Image.memory(_image!, fit: BoxFit.contain, gaplessPlayback: true)
         else SceneThumbnail(materialIndex: visuals.lastOrNull?.materialIndex ?? 0, height: 270),
         if (_native && _image == null && _error == null)
-          const Center(child: CircularProgressIndicator()),
+          const Center(child: Spinner3D()),
         if (_error != null) ColoredBox(color: const Color(0xDB17251B), child: Center(
           child: Padding(padding: const EdgeInsets.all(18), child: Column(
             mainAxisSize: MainAxisSize.min, children: [

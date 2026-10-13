@@ -238,7 +238,6 @@ class MusicController extends ChangeNotifier {
   void setSleepTimer(Duration? value) => _setSleepTimer(value);
   void setSleepAtTrackEnd(bool value) => _change(() {
     _sleepTimer?.cancel();
-    cancelImport();
     sleepEndsAt = null;
     sleepAtTrackEnd = value;
   });
