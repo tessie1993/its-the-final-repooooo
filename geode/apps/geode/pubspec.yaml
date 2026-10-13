@@ -1,0 +1,34 @@
+name: geode
+description: "Geode: music player, GPU visualizer and video suite."
+version: 1.8.0+32
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+  flutter: ">=3.47.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  geode_native:
+    path: ../../packages/geode_native
+  geode_engine:
+    path: ../../packages/geode_engine
+  geode_data:
+    path: ../../packages/geode_data
+  geode_editor:
+    path: ../../packages/geode_editor
+  geode_playback:
+    path: ../../packages/geode_playback
+  geode_export:
+    path: ../../packages/geode_export
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

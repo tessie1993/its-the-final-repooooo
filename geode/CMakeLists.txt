@@ -90,3 +90,13 @@ add_library(geode SHARED
 target_compile_options(geode PRIVATE ${GEODE_COMPILE_OPTIONS})
 target_link_options(geode PRIVATE ${GEODE_LINK_OPTIONS})
 target_link_libraries(geode PRIVATE geode_core log android)
+
+# Flutter port: native pieces added by the port live in their own OBJECT libraries so their
+# exported C symbols always reach libgeode.so. Each is optional until its directory exists.
+foreach(port_module host export)
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/core/${port_module}/CMakeLists.txt)
+        add_subdirectory(core/${port_module})
+        target_sources(geode PRIVATE $<TARGET_OBJECTS:geode_${port_module}_core>)
+        target_link_libraries(geode PRIVATE geode_${port_module}_core)
+    endif()
+endforeach()

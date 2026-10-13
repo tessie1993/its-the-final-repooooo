@@ -1,0 +1,23 @@
+name: geode_engine
+description: "Audio analysis, scene parameters and the renderer model over libgeode."
+version: 1.8.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.5
+  flutter: ">=3.47.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.1.4
+  geode_native:
+    path: ../geode_native
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
