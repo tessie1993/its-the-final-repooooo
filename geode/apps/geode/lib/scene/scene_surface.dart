@@ -64,10 +64,10 @@ class _SceneSurfaceState extends State<SceneSurface>
     final materialTextures = <ui.Image>[];
     try {
       // Decode once; no image readback or shader creation happens each frame.
-      final bytes = await rootBundle.load('assets/images/forest-sanctuary.png');
+      final bytes = await rootBundle.load('assets/images/bioluminescent-sanctuary.png');
       final codec = await ui.instantiateImageCodec(
         bytes.buffer.asUint8List(bytes.offsetInBytes, bytes.lengthInBytes),
-        targetWidth: 1920,
+        targetWidth: 1024,
       );
       try {
         image = (await codec.getNextFrame()).image;
@@ -286,6 +286,7 @@ class _ScenePainter extends CustomPainter {
       values.add(controller.hue); // Float slot 31.
       values.add(reduced ? 0.0 : controller.audioRms); // Float slot 32.
       values.add(reduced ? 0.0 : controller.audioBass); // Float slot 33.
+      values.add(controller.luminescence); // Float slot 34.
       for (var i = 0; i < values.length; i += 1) {
         activeShader.setFloat(i, values[i]);
       }
@@ -377,7 +378,7 @@ class _ScenePainter extends CustomPainter {
       paintImage(canvas: canvas, rect: orb, image: materialTextures[material],
         fit: BoxFit.cover, opacity: .55);
     }
-    final envelope = reduced ? .2 : .2 + controller.audioRms * .45 + controller.audioBass * .2;
+    final envelope = controller.lightEnvelope;
     if (materialTextures.length > 3) {
       paintImage(canvas: canvas, rect: orb, image: materialTextures[3],
         fit: BoxFit.cover, opacity: envelope);

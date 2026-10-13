@@ -8,6 +8,7 @@ import 'package:vector_math/vector_math.dart' as vm;
 import '../three_d/geode_materials.dart';
 import '../three_d/geode_meshes.dart';
 import 'geode_scene_controller.dart';
+import 'bioluminescent_world.dart';
 import 'nature_geometry.dart';
 
 /// The 3D nature world behind every screen, rendered by Flutter GPU over the
@@ -17,18 +18,20 @@ import 'nature_geometry.dart';
 class NativeNatureScene {
   NativeNatureScene(this._materials) {
     scene
-      ..environmentIntensity = .85
+      ..environmentIntensity = .5
       ..exposure = 1.05
       ..toneMapping = fs.ToneMappingMode.pbrNeutral
       ..directionalLight = fs.DirectionalLight(
         direction: vm.Vector3(.5, -1, .8),
         color: vm.Vector3(.86, .96, 1),
-        intensity: 1.7,
+        intensity: 1.25,
       );
     _buildGeometry();
+    _livingWorld = BioluminescentWorld(scene, _materials);
   }
 
   final GeodeMaterials _materials;
+  late final BioluminescentWorld _livingWorld;
 
   /// Shell destination (0 visuals, 1 music, 2 studio, 3 settings, -1 immersive).
   int destination = 0;
@@ -131,7 +134,7 @@ class NativeNatureScene {
     final lensMesh = fs.Mesh(
       fs.SphereGeometry(radius: .16, segments: 28, rings: 18), _lensMaterial);
     for (var i = 0; i < 4; i++) {
-      final node = fs.Node(name: 'Floating glass pebble ${i + 1}', mesh: lensMesh);
+      final node = fs.Node(name: 'Floating sap pebble ${i + 1}', mesh: lensMesh);
       _lenses.add(node);
       scene.add(node);
     }
@@ -185,7 +188,7 @@ class NativeNatureScene {
     final dt = _lastTime < 0 ? 1.0 : (time - _lastTime).clamp(0.0, .1).toDouble();
     _lastTime = time;
     // Reduced motion jumps straight to the station; otherwise ease in ~0.6 s.
-    final blend = controller.effectiveReducedMotion ? 1.0 : 1 - math.exp(-dt * 5);
+    final blend = controller.motionDisabled ? 1.0 : 1 - math.exp(-dt * 5);
     final tilt = controller.effectiveReducedMotion ? Offset.zero : controller.tilt;
     camera.position.setFrom(camera.position + (eye + vm.Vector3(tilt.dx * .18, -tilt.dy * .12, 0)
       - camera.position) * blend);
@@ -245,6 +248,7 @@ class NativeNatureScene {
     }
     _swayFerns(t, controller.audioBass);
     _updateMaterials(controller);
+    _livingWorld.update(controller);
     scene.renderScale = controller.highQuality ? .85 : .65;
     // All movement uses the shared, bounded gel clock. Explicitly prevent
     // Scene's implicit wall clock from advancing behind paused/reduced UI.

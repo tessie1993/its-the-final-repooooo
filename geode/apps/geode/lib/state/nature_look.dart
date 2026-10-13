@@ -15,6 +15,7 @@ class NatureLook {
     this.particles = true,
     this.natureDetails = true,
     this.hue = .5,
+    this.luminescence = .65,
     this.particleDensity = .6,
     this.rippleStrength = .65,
     this.nativeScene,
@@ -24,14 +25,14 @@ class NatureLook {
 
   final String id, name, description;
   final int material;
-  final double energy, hue, particleDensity, rippleStrength;
+  final double energy, hue, luminescence, particleDensity, rippleStrength;
   final bool saved, particles, natureDetails;
   final String? nativeScene, milkPreset;
   final Map<String, double> nativeParameters;
 
   NatureLook copyWith({String? id, String? name, String? description,
     int? material, double? energy, bool? saved, bool? particles,
-    bool? natureDetails, double? hue, double? particleDensity,
+    bool? natureDetails, double? hue, double? luminescence, double? particleDensity,
     double? rippleStrength, String? nativeScene, String? milkPreset,
     Map<String, double>? nativeParameters}) => NatureLook(
       id: id ?? this.id, name: name ?? this.name,
@@ -39,6 +40,7 @@ class NatureLook {
       material: material ?? this.material, energy: energy ?? this.energy,
       saved: saved ?? this.saved, particles: particles ?? this.particles,
       natureDetails: natureDetails ?? this.natureDetails, hue: hue ?? this.hue,
+      luminescence: luminescence ?? this.luminescence,
       particleDensity: particleDensity ?? this.particleDensity,
       rippleStrength: rippleStrength ?? this.rippleStrength,
       nativeScene: nativeScene ?? this.nativeScene, milkPreset: milkPreset ?? this.milkPreset,
@@ -48,7 +50,7 @@ class NatureLook {
     'id': id, 'name': name, 'description': description,
     'material': material, 'energy': energy, 'saved': saved,
     'particles': particles, 'natureDetails': natureDetails,
-    'hue': hue, 'particleDensity': particleDensity,
+    'hue': hue, 'luminescence': luminescence, 'particleDensity': particleDensity,
     'rippleStrength': rippleStrength,
     'nativeScene': ?nativeScene,
     'milkPreset': ?milkPreset,
@@ -102,6 +104,7 @@ class NatureLook {
       id: string('id'), name: string('name', max: 64),
       description: string('description', max: 240), material: material,
       energy: number('energy', .42), hue: number('hue', .5),
+      luminescence: number('luminescence', .65),
       particleDensity: number('particleDensity', .6),
       rippleStrength: number('rippleStrength', .65),
       saved: boolean('saved', true), particles: boolean('particles', true),

@@ -20,6 +20,7 @@ uniform vec4 uTouch3;        // 27..30
 uniform float uHue;         // 31: centered hue rotation, .5 is neutral
 uniform float uAudioRms;    // 32: live measured PCM envelope
 uniform float uAudioBass;   // 33: live measured bass envelope
+uniform float uLuminescence; // 34: user-selected living light
 uniform sampler2D uEnvironment; // sampler slot 0
 uniform sampler2D uMoss;        // sampler slot 1
 uniform sampler2D uStone;       // sampler slot 2
@@ -65,7 +66,7 @@ float sphereField(vec3 point) {
   vec3 p = point;
   p.xy -= vec2(uTilt.x, -uTilt.y) * .075;
   p.y -= sin(t * .75) * .019;
-  float radius = .57 + uPulse * .018;
+  float radius = .57 + uPulse * .035 + uAudioBass * .022;
   float wave = sin(p.x * 7.0 + t * 1.15) *
                sin(p.y * 6.0 - t * .83) *
                sin(p.z * 5.0 + t * .6);
@@ -73,7 +74,7 @@ float sphereField(vec3 point) {
   vec2 uv = uCenter + vec2(point.x, -point.y) * uOrbScale * shortest * .5 / uResolution;
   float touchDeformation = gelWave(uv).z * .026;
   p *= vec3(.93, 1.10, 1.22);
-  return length(p) - radius + wave * .007 + touchDeformation * .28;
+  return length(p) - radius + wave * (.014 + uEnergy * .012) + touchDeformation * .55;
 }
 
 float sceneField(vec3 p) {
@@ -126,15 +127,19 @@ vec3 natureSurface(vec3 position, vec3 normal, vec2 screenUv) {
   // Organic transmission keeps the landscape visible through the softer core,
   // while the textured outer rim preserves the form of the moss and stone.
   vec3 behind = environment(screenUv + normal.xy * vec2(.012, -.012));
-  float transmission = .34 + (1.0 - edge) * .20;
+  float transmission = .46 + (1.0 - edge) * .18;
   vec3 lit = material * (.48 + diffuse * .95);
   vec3 color = mix(lit, behind * vec3(.90, 1.0, .94), transmission);
   vec4 veins = texture(uVeins, textureUv);
-  float envelope = .12 + uAudioRms * .72 + uAudioBass * .36 + uPulse * .14;
-  float breathing = .82 + .18 * sin(uTime * .8);
+  float envelope = uLuminescence * (.32 + uAudioRms * .72 + uAudioBass * .36 + uPulse * .25);
+  float breathing = .88 + .12 * sin(uTime * .8) * (1.0 - uReducedMotion);
   // Flutter image samplers already contain premultiplied alpha.
   vec3 emission = veins.rgb * envelope * breathing;
-  color += emission + vec3(.12, .33, .24) * edge * envelope * .24;
+  // Living sap: lit internal filaments and soft rounded edge scattering.
+  float filament = pow(.5 + .5 * sin(position.y * 24.0 + sin(position.x * 14.0)
+      + position.z * 18.0 + uTime * .16 * (1.0 - uReducedMotion)), 18.0);
+  color += emission + vec3(.08, .64, .40) * edge * envelope * .5;
+  color += vec3(.04, .48, .29) * filament * envelope * .22;
   vec3 halfLight = normalize(light + vec3(0.0, 0.0, 1.0));
   color += vec3(.55, .77, .57) * pow(max(dot(normal, halfLight), 0.0), 20.0) * .09;
   vec3 tint = .92 + .08 * cos((uHue - .5) * 6.2831853 + vec3(0.0, 2.1, 4.2));
@@ -150,9 +155,19 @@ void main() {
   p /= max(uOrbScale, .1);
   vec3 gel = gelWave(uv);
   // Touch waves travel across the lake behind the solid natural materials.
-  vec2 gelUv = uv + gel.xy * .009 * shortest / uResolution;
+  // Slow gel advection remains subtle enough to keep the environment legible.
+  float clock = uTime * (1.0 - uReducedMotion);
+  float pool = smoothstep(.35, .65, uv.y);
+  vec2 drift = vec2(sin(uv.y * 18.0 + clock * .32),
+      cos(uv.x * 16.0 - clock * .24)) * .0015 * pool;
+  vec2 gelUv = uv + drift + gel.xy * .012 * shortest / uResolution;
   vec3 color = environment(gelUv);
-  color += vec3(.18, .34, .35) * gel.z * .10;
+  color += vec3(.05, .7, .48) * abs(gel.z) * uLuminescence * .35;
+  // Fine caustics live below the surface of the gel pool.
+  float caustic = sin(uv.x * 43.0 + sin(uv.y * 28.0 + clock * .4))
+      * sin(uv.y * 39.0 - sin(uv.x * 22.0 - clock * .3));
+  color += vec3(.02, .22, .16) * pow(max(caustic, 0.0), 8.0)
+      * pool * uLuminescence * (.25 + uAudioBass * .5);
   float vignette = smoothstep(.14, .85, distance(uv, vec2(.5, .43)));
   color *= 1.0 - vignette * .24;
 

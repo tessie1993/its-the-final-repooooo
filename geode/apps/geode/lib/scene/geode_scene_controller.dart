@@ -24,6 +24,7 @@ class GeodeSceneController extends ChangeNotifier {
   double _time = 0;
   double _energy = .42;
   double _hue = .5;
+  double _luminescence = .65;
   double _particleDensity = .6;
   double _rippleStrength = .65;
   double _displayEnergy = .42;
@@ -58,6 +59,22 @@ class GeodeSceneController extends ChangeNotifier {
   double get time => _time;
   double get energy => _energy;
   double get hue => _hue;
+  double get luminescence => _luminescence;
+
+  /// Shared light level for 3D organisms, particles and tactile control rims.
+  /// Paused and accessibility still modes never flicker in response to audio.
+  double get lightEnvelope => _luminescence * (motionDisabled
+      ? .32
+      : (.32 + _audioRms * .45 + _audioBass * .25 + _pulse * .2)
+          .clamp(0.0, 1.0));
+
+  void setLuminescence(double value) {
+    if (_disposed || !value.isFinite) return;
+    final bounded = value.clamp(0.0, 1.0).toDouble();
+    if (bounded == _luminescence) return;
+    _luminescence = bounded;
+    notifyListeners();
+  }
   double get particleDensity => _particleDensity;
   double get rippleStrength => _rippleStrength;
   double get displayEnergy => _displayEnergy;

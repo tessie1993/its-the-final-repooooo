@@ -18,6 +18,9 @@ class VisualLibrary extends ChangeNotifier {
   static const _seed = [
     NatureLook(id: 'forest-glass', name: 'Forest sanctuary',
       description: 'Moss & fern · quiet ripples', material: 0, energy: .42),
+    NatureLook(id: 'luminous-tide', name: 'Luminous tide',
+      description: 'Glowing fungi · living gel · midnight pool', material: 0,
+      energy: .55, hue: .5, luminescence: .9, particleDensity: .75),
     NatureLook(id: 'moonstone', name: 'Moonstone',
       description: 'River stone · slow drift', material: 1, energy: .25, hue: .72),
     NatureLook(id: 'silver-spring', name: 'Woodland current',

@@ -41,6 +41,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/images/bioluminescent-sanctuary.png
     - assets/images/forest-sanctuary.png
     - assets/images/nature-pebble.png
     - assets/images/fern-dew.png

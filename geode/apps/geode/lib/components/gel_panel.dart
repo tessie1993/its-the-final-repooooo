@@ -66,14 +66,13 @@ class _StoneRimPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final rect = (Offset.zero & size).deflate(.8);
-    final quiet = scene?.effectiveReducedMotion ?? false;
-    final glow = .08 + (quiet ? 0 : (scene?.audioRms ?? 0) * .28 + (scene?.pulse ?? 0) * .12);
+    final glow = .05 + (scene?.lightEnvelope ?? .2) * .6;
     final edge = BorderRadius.only(
       topLeft: Radius.circular(radius * .85), topRight: Radius.circular(radius * 1.1),
       bottomLeft: Radius.circular(radius * 1.05), bottomRight: Radius.circular(radius * .82));
     canvas.drawRRect(edge.toRRect(rect.deflate(1)), Paint()
       ..style = PaintingStyle.stroke..strokeWidth = 2
-      ..color = const Color(0xFF8AF2B0).withValues(alpha: glow)
+      ..color = const Color(0xFF72F4C5).withValues(alpha: glow)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
     canvas.drawRRect(edge.toRRect(rect), Paint()
       ..style = PaintingStyle.stroke..strokeWidth = highlighted ? 1.5 : 1

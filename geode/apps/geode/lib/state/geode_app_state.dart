@@ -62,6 +62,7 @@ class GeodeAppState extends ChangeNotifier {
     selectedLook.particles != scene.particlesEnabled ||
     selectedLook.natureDetails != natureDetails ||
     (selectedLook.hue - scene.hue).abs() > .001 ||
+    (selectedLook.luminescence - scene.luminescence).abs() > .001 ||
     (selectedLook.particleDensity - scene.particleDensity).abs() > .001 ||
     (selectedLook.rippleStrength - scene.rippleStrength).abs() > .001;
 
@@ -91,6 +92,7 @@ class GeodeAppState extends ChangeNotifier {
         scene.setMaterial(_number(p, 'material', selectedLook.material.toDouble()).round());
         scene.setEnergy(_number(p, 'energy', selectedLook.energy));
         scene.setHue(_number(p, 'hue', .5));
+        scene.setLuminescence(_number(p, 'luminescence', .65));
         scene.setParticleDensity(_number(p, 'density', .6));
         scene.setRippleStrength(_number(p, 'ripples', .65));
         scene.particlesEnabled = p['particles'] != false;
@@ -102,7 +104,7 @@ class GeodeAppState extends ChangeNotifier {
         parameterLocks.clear();
         if (locks is List) {
           parameterLocks.addAll(locks.whereType<String>().where(
-            const {'material', 'energy', 'hue', 'particleDensity', 'rippleStrength'}.contains));
+            const {'material', 'energy', 'hue', 'luminescence', 'particleDensity', 'rippleStrength'}.contains));
         }
         final parameters = p['visualParameters'];
         if (parameters is Map) {
@@ -172,6 +174,7 @@ class GeodeAppState extends ChangeNotifier {
     final snapshot = jsonEncode({
       'material': scene.materialIndex, 'energy': scene.energy, 'hue': scene.hue,
       'density': scene.particleDensity, 'ripples': scene.rippleStrength,
+      'luminescence': scene.luminescence,
       'particles': scene.particlesEnabled, 'highQuality': scene.highQuality,
       'reducedMotion': scene.reducedMotion, 'natureDetails': natureDetails,
       'haptics': haptics, 'locks': parameterLocks.toList(),
@@ -210,6 +213,7 @@ class GeodeAppState extends ChangeNotifier {
   }
   void setMaterial(int value) { scene.setMaterial(value); _changed(); }
   void setEnergy(double value) { scene.setEnergy(value); _syncNativeParameters(); _changed(); }
+  void setLuminescence(double value) { scene.setLuminescence(value); _changed(); }
   void setHue(double value) { scene.setHue(value); _syncNativeParameters(); _changed(); }
   void setParticleDensity(double value) { scene.setParticleDensity(value); _syncNativeParameters(); _changed(); }
   void setRippleStrength(double value) { scene.setRippleStrength(value); _syncNativeParameters(); _changed(); }
@@ -230,6 +234,7 @@ class GeodeAppState extends ChangeNotifier {
     if (!parameterLocks.contains('material')) scene.setMaterial(random.nextInt(3));
     if (!parameterLocks.contains('energy')) scene.setEnergy(.15 + random.nextDouble() * .7);
     if (!parameterLocks.contains('hue')) scene.setHue(random.nextDouble());
+    if (!parameterLocks.contains('luminescence')) scene.setLuminescence(.25 + random.nextDouble() * .65);
     if (!parameterLocks.contains('particleDensity')) scene.setParticleDensity(.2 + random.nextDouble() * .7);
     if (!parameterLocks.contains('rippleStrength')) scene.setRippleStrength(.3 + random.nextDouble() * .7);
     _syncNativeParameters();
@@ -264,6 +269,7 @@ class GeodeAppState extends ChangeNotifier {
     scene.setMaterial(look.material);
     scene.setEnergy(look.energy);
     scene.setHue(look.hue);
+    scene.setLuminescence(look.luminescence);
     scene.setParticleDensity(look.particleDensity);
     scene.setRippleStrength(look.rippleStrength);
     scene.particlesEnabled = look.particles;
@@ -295,7 +301,8 @@ class GeodeAppState extends ChangeNotifier {
       name: name.trim(), description: 'Your nature study',
       material: scene.materialIndex, energy: scene.energy, saved: true,
       particles: scene.particlesEnabled, natureDetails: natureDetails,
-      hue: scene.hue, particleDensity: scene.particleDensity, rippleStrength: scene.rippleStrength,
+      hue: scene.hue, luminescence: scene.luminescence,
+      particleDensity: scene.particleDensity, rippleStrength: scene.rippleStrength,
       nativeScene: nativeVisuals.enabled ? nativeVisuals.sceneId : null,
       milkPreset: nativeVisuals.enabled ? nativeVisuals.milkPreset : null,
       nativeParameters: Map.unmodifiable(_visualParameters));
