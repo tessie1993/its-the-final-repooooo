@@ -26,8 +26,6 @@ env:
   FLUTTER_VERSION: '3.47.7'
   NDK_VERSION: '28.2.13676358'
   CMAKE_VERSION: '3.22.1'
-  # flutter_angle (three_js renderer) builds its native code with this CMake.
-  ANGLE_CMAKE_VERSION: '3.31.4'
 
 jobs:
   flutter-checks:
@@ -109,7 +107,7 @@ jobs:
           sdkmanager="$sdk_root/cmdline-tools/latest/bin/sdkmanager"
           yes | "$sdkmanager" --licenses >/dev/null || true
           "$sdkmanager" 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0' \
-            "ndk;$NDK_VERSION" "cmake;$CMAKE_VERSION" "cmake;$ANGLE_CMAKE_VERSION"
+            "ndk;$NDK_VERSION" "cmake;$CMAKE_VERSION"
       - name: Download locked pub.dev libraries
         run: flutter pub get --enforce-lockfile
       - name: Build debug APK with C++ audio engine, analysis and visualizers

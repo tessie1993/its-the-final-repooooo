@@ -33,11 +33,6 @@ dependencies:
   flame_3d: ^0.3.2
   ditredi: ^2.0.2
   model_viewer_plus: ^1.10.0
-  three_js_core: ^0.3.0
-  three_js_math: ^0.3.0
-  three_js_geometry: ^0.3.0
-  three_js_angle_renderer: ^0.0.1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
