@@ -27,7 +27,8 @@ android {
     namespace = "dev.geode.geode_native"
 
     compileSdk = 36
-    ndkVersion = "28.0.13004108"
+    // Same NDK as the Flutter app and its other native plugins, so one NDK builds the APK.
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
