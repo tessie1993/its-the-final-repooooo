@@ -12,6 +12,7 @@ import 'screens/studio_screen.dart';
 import 'screens/visualizer_screen.dart';
 import 'state/geode_app_state.dart';
 import 'theme/geode_theme.dart';
+import 'three_d/asset_3d.dart';
 
 class GeodeApp extends StatefulWidget {
   const GeodeApp({super.key, this.enableDeviceServices = true});
@@ -119,7 +120,7 @@ class GeodeShell extends StatelessWidget {
     final wide = MediaQuery.sizeOf(context).width >= 900;
     return Padding(padding: EdgeInsets.fromLTRB(wide ? 40 : 24, 14, wide ? 40 : 24, 8),
       child: Row(children: [
-        Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true),
+        Asset3D.boxed(asset: Geode3DAsset.fernDew, spin: true, width: 42, height: 42, fallback: Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true)),
         const SizedBox(width: 9),
         const Text('geode', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w500, letterSpacing: -1.4)),
         const Spacer(),

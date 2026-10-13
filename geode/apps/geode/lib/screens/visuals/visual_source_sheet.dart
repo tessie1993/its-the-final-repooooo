@@ -68,7 +68,7 @@ class _VisualSourceSheetState extends State<_VisualSourceSheet> {
               onPressed: () { Navigator.pop(context); state.navigate(1); }),
             const SizedBox(height: 10),
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Return to the flow')),
-          ];
+          ]);
         }),
     )),
   ));

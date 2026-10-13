@@ -31,8 +31,10 @@ class GelPanel extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(borderRadius: borderRadius, boxShadow: [
         const BoxShadow(color: Color(0x6604090A), blurRadius: 22, offset: Offset(0, 13)),
-        BoxShadow(color: const Color(0x24101D17), blurRadius: 0,
-          offset: Offset(0, highlighted ? 5 : 3)),
+        // Stacked hard edges extrude the panel into a slab of stone.
+        for (var layer = 1; layer <= (highlighted ? 6 : 4); layer++)
+          BoxShadow(color: Color.lerp(const Color(0xFF2C3F31), const Color(0xFF0B1611),
+            layer / 6)!.withValues(alpha: .9), blurRadius: 0, offset: Offset(0, layer.toDouble())),
       ]),
       child: ClipRRect(borderRadius: borderRadius,
         child: CustomPaint(foregroundPainter: _StoneRimPainter(radius, highlighted, scene),

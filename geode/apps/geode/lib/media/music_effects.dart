@@ -77,7 +77,13 @@ extension _MusicEffects on MusicController {
       if (const ['off', 'track', 'album'].contains(replayGain)) replayGainMode = replayGain!;
       try { await _applyDsp(); }
       catch (_) {
-        (bassBoost, loudnessDb, preampDb, crossfeed, limiter, replayGainMode) = previous;
+        // Pattern assignment can't target fields, so restore each one.
+        bassBoost = previous.$1;
+        loudnessDb = previous.$2;
+        preampDb = previous.$3;
+        crossfeed = previous.$4;
+        limiter = previous.$5;
+        replayGainMode = previous.$6;
         rethrow;
       }
       _changed();

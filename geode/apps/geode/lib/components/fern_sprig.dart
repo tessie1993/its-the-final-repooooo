@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../three_d/asset_3d.dart';
 
 /// A small botanical mark drawn as leaves and stems, without a surrounding orb.
 class FernSprig extends StatelessWidget {
@@ -7,7 +8,8 @@ class FernSprig extends StatelessWidget {
   final double size;
   @override
   Widget build(BuildContext context) => ExcludeSemantics(child: SizedBox.square(
-    dimension: size, child: CustomPaint(painter: const _FernPainter())));
+    dimension: size, child: const Asset3D(asset: Geode3DAsset.fernSprig,
+      fallback: CustomPaint(painter: _FernPainter()))));
 }
 
 class _FernPainter extends CustomPainter {

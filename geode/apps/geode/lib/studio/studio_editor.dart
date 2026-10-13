@@ -94,9 +94,11 @@ class _StudioEditorState extends State<StudioEditor> with WidgetsBindingObserver
       LayoutBuilder(builder: (context, box) {
         final preview = _preview(context);
         final inspector = ClipInspector(studio: studio, pausePreview: _pause);
-        if (box.maxWidth < 920) return Column(children: [
+        if (box.maxWidth < 920) {
+          return Column(children: [
           preview, const SizedBox(height: 18), inspector,
         ]);
+        }
         return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(flex: 3, child: preview), const SizedBox(width: 18),
           Expanded(flex: 2, child: inspector),

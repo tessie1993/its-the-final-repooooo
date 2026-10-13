@@ -5,7 +5,7 @@ publish_to: none
 
 environment:
   sdk: ^3.13.5
-  flutter: ">=3.47.1"
+  flutter: ">=3.47.7"
 
 resolution: workspace
 
@@ -30,7 +30,9 @@ dependencies:
     path: ../../packages/geode_playback
   geode_export:
     path: ../../packages/geode_export
-
+  flame_3d: ^0.3.2
+  ditredi: ^2.0.2
+  model_viewer_plus: ^1.10.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -45,5 +47,6 @@ flutter:
     - assets/images/crystal-fern.png
     - assets/images/stone-dial.png
     - assets/textures/
+    - assets/models/
   shaders:
     - shaders/nature_stone.frag

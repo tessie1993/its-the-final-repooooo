@@ -7,7 +7,8 @@ plugins {
 android {
     namespace = "dev.geode.geode"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "28.0.13004108"
+    // Flutter 3.47.7 default (28.2.13676358); flutter_angle and jni pin the same NDK.
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

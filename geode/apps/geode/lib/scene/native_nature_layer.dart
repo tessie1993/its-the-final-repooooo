@@ -1,14 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_scene/scene.dart' as fs;
+import '../three_d/geode_materials.dart';
 import 'geode_scene_controller.dart';
 import 'native_nature_scene.dart';
 
-/// An optional transparent GPU pass; the underlying nature shader is retained
+/// The 3D nature world behind every screen. The underlying nature shader is retained
 /// when the platform cannot initialize Flutter GPU.
 class NativeNatureLayer extends StatefulWidget {
-  const NativeNatureLayer({super.key, required this.controller});
+  const NativeNatureLayer({super.key, required this.controller, this.destination = 0});
   final GeodeSceneController controller;
+
+  /// Shell destination (0 visuals, 1 music, 2 studio, 3 settings, -1 immersive).
+  final int destination;
   @override
   State<NativeNatureLayer> createState() => _NativeNatureLayerState();
 }
@@ -21,13 +24,13 @@ class _NativeNatureLayerState extends State<NativeNatureLayer> {
   Future<void> _initialize() async {
     NativeNatureScene? nature;
     try {
-      await fs.Scene.preload();
+      final materials = await GeodeMaterials.load();
       if (!mounted) return;
-      nature = NativeNatureScene();
+      nature = NativeNatureScene(materials);
       setState(() => _nature = nature);
     } catch (error) {
       nature?.dispose();
-      if (kDebugMode) debugPrint('Geode GPU accents unavailable: $error');
+      if (kDebugMode) debugPrint('Geode 3D world unavailable: $error');
     }
   }
 
@@ -35,6 +38,7 @@ class _NativeNatureLayerState extends State<NativeNatureLayer> {
   Widget build(BuildContext context) {
     final nature = _nature;
     if (nature == null) return const SizedBox.expand();
+    nature.destination = widget.destination;
     return IgnorePointer(child: RepaintBoundary(child: CustomPaint(
       isComplex: true,
       painter: _NativeNaturePainter(nature, widget.controller,
@@ -59,12 +63,12 @@ class _NativeNaturePainter extends CustomPainter {
     if (size.isEmpty || nature.failed) return;
     canvas.save();
     try {
-      nature.update(controller);
+      nature.update(controller, aspect: size.width / size.height);
       nature.scene.render(nature.camera, canvas,
         viewport: Offset.zero & size, pixelRatio: pixelRatio);
     } catch (error) {
       nature.failed = true;
-      if (kDebugMode) debugPrint('Geode GPU accents stopped: $error');
+      if (kDebugMode) debugPrint('Geode 3D world stopped: $error');
     } finally { canvas.restore(); }
   }
 

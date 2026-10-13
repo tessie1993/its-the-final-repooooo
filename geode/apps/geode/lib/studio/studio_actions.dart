@@ -140,8 +140,10 @@ mixin _StudioEditing on ChangeNotifier {
 
   void deleteMarker(String id) {
     final project = selectedProject;
-    if (project != null) _commit(project.copyWith(markers:
+    if (project != null) {
+      _commit(project.copyWith(markers:
       project.markers.where((marker) => marker.id != id).toList()));
+    }
   }
 
   void setTransition(String type, int durationMs) {
@@ -170,13 +172,17 @@ mixin _StudioEditing on ChangeNotifier {
 
   void deleteKey(String id) {
     final project = selectedProject;
-    if (project != null) _commit(project.copyWith(keys:
+    if (project != null) {
+      _commit(project.copyWith(keys:
       project.keys.where((key) => key.id != id).toList()));
+    }
   }
 
   void saveExport(Map<String, dynamic> settings) {
     final project = selectedProject;
-    if (project != null) _commit(project.copyWith(exportSettings:
+    if (project != null) {
+      _commit(project.copyWith(exportSettings:
       {...project.exportSettings, ...settings}));
+    }
   }
 }

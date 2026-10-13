@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../three_d/depth_3d.dart';
 import '../theme/geode_theme.dart';
 import 'gel_panel.dart';
 
@@ -12,7 +13,7 @@ class GelIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(selected: selected,
-    child: GelPanel(radius: 30, opacity: selected ? .85 : .55, blur: 6,
+    child: Depth3D(enabled: onPressed != null, radius: 30, maxTilt: .22, sink: .06, child: GelPanel(radius: 30, opacity: selected ? .85 : .55, blur: 6,
       highlighted: selected, pearl: selected, padding: EdgeInsets.zero,
       child: Material(color: Colors.transparent,
         child: IconButton(tooltip: tooltip, onPressed: onPressed,
@@ -27,6 +28,6 @@ class GelIconButton extends StatelessWidget {
           ]),
         ),
       ),
-    ),
+    )),
   );
 }

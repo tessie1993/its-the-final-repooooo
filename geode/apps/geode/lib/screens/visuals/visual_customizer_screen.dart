@@ -3,6 +3,7 @@ import '../../components/components.dart';
 import '../../state/geode_app_state.dart';
 import '../../theme/geode_theme.dart';
 import 'visual_widgets.dart';
+import '../../three_d/asset_3d.dart';
 
 class VisualCustomizerScreen extends StatefulWidget {
   const VisualCustomizerScreen({super.key, required this.state});
@@ -40,7 +41,7 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Row(children: [
                   Expanded(child: Text('A little serendipity', style: Theme.of(context).textTheme.titleMedium)),
-                  Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true),
+                  Asset3D.boxed(asset: Geode3DAsset.fernDew, width: 42, height: 42, fallback: Image.asset('assets/images/fern-dew.png', width: 42, height: 42, excludeFromSemantics: true)),
                 ]),
                 const SizedBox(height: 4),
                 const Text('Lock what you love. Shuffle the rest into something new.'),
@@ -65,12 +66,12 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
     child: GelPanel(padding: EdgeInsets.zero, opacity: .45,
       child: SizedBox(height: 225, child: Stack(children: [
         Positioned.fill(child: ClipRRect(borderRadius: BorderRadius.circular(28),
-          child: Image.asset('assets/images/forest-sanctuary.png', fit: BoxFit.cover,
+          child: Asset3D(asset: Geode3DAsset.forestSanctuary, fallback: Image.asset('assets/images/forest-sanctuary.png', fit: BoxFit.cover,
             color: const Color(0xB8092631), colorBlendMode: BlendMode.srcATop,
-            excludeFromSemantics: true))),
+            excludeFromSemantics: true)))),
         Positioned(right: -20, top: -20, child: VisualFloat(state: state,
-          phase: 2, anchor: const Offset(.72, .32), child: Image.asset(
-            'assets/images/crystal-fern.png', width: 245, height: 245, excludeFromSemantics: true))),
+          phase: 2, anchor: const Offset(.72, .32), child: Asset3D.boxed(asset: Geode3DAsset.crystalFern, spin: true, width: 245, height: 245, fallback: Image.asset(
+            'assets/images/crystal-fern.png', width: 245, height: 245, excludeFromSemantics: true)))),
         Positioned(right: 40, bottom: 32, child: VisualFloat(state: state, phase: 3.5,
           child: MaterialOrb(materialIndex: state.scene.materialIndex, size: 95))),
         Positioned(left: 24, right: 130, bottom: 26, child: Column(

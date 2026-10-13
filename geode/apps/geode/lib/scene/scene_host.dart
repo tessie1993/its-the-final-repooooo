@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:geode_engine/geode_engine.dart';
 import 'package:geode_native/geode_native.dart';
 import '../state/geode_app_state.dart';
+import '../three_d/three_d_support.dart';
 import 'scene_surface.dart';
 import 'nature_motion_scope.dart';
 
@@ -71,7 +72,8 @@ class _SceneHostState extends State<SceneHost> {
             enableNativeScene: state.enableDeviceServices && state.natureDetails && !state.nativeVisuals.enabled,
             orbAlignment: state.immersive ? Alignment.center
               : (wide ? const Alignment(-.40, -.08) : const Alignment(0, -.15)),
-            orbScale: wide ? .8 : .96),
+            orbScale: wide ? .8 : .96,
+            destination: state.immersive ? -1 : state.destination),
           ListenableBuilder(listenable: state.nativeVisuals, builder: (context, _) =>
             state.nativeVisuals.enabled
               ? NativeVisualizerTexture(controller: state.nativeVisuals)
@@ -83,7 +85,10 @@ class _SceneHostState extends State<SceneHost> {
             const IgnorePointer(child: ColoredBox(color: Color(0x4D102438))),
           MediaQuery(data: MediaQuery.of(context).copyWith(disableAnimations:
             MediaQuery.disableAnimationsOf(context) || state.scene.reducedMotion),
-              child: NatureMotionScope(controller: state.scene, child: child!)),
+              child: GeodeStateScope(state: state,
+                enabled: state.enableDeviceServices && state.natureDetails,
+                highQuality: state.scene.highQuality,
+                child: NatureMotionScope(controller: state.scene, child: child!))),
         ]));
     }),
   );

@@ -6,6 +6,7 @@ import '../scene/gel_float.dart';
 import '../state/geode_app_state.dart';
 import 'studio_dialogs.dart';
 import 'studio_models.dart';
+import '../three_d/asset_3d.dart';
 
 class ProjectBrowser extends StatelessWidget {
   const ProjectBrowser({super.key, required this.state});
@@ -80,8 +81,8 @@ class ProjectBrowser extends StatelessWidget {
       ]),
       const SizedBox(height: 12),
       if (projects.isEmpty) GelPanel(child: Column(children: [
-        Image.asset('assets/images/crystal-fern.png', width: 140, height: 110,
-          excludeFromSemantics: true, errorBuilder: (_, error, stack) => const Icon(Icons.spa_outlined, size: 38)),
+        Asset3D.boxed(asset: Geode3DAsset.crystalFern, width: 140, height: 110, fallback: Image.asset('assets/images/crystal-fern.png', width: 140, height: 110,
+          excludeFromSemantics: true, errorBuilder: (_, error, stack) => const Icon(Icons.spa_outlined, size: 38))),
         const SizedBox(height: 12),
         Text('Room for your first film', style: text.titleMedium),
         const SizedBox(height: 8),

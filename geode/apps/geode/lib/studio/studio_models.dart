@@ -98,13 +98,13 @@ class StudioClip {
   StudioClip copyWith({String? id, String? label, int? startMs, int? durationMs,
     int? sourceInMs, int? materialIndex, bool? enabled,
     Map<String, dynamic>? transition}) => StudioClip.fromJson({...toJson(),
-      if (id != null) 'id': id, if (label != null) 'label': label,
-      if (startMs != null) 'startMs': startMs,
-      if (durationMs != null) 'durationMs': durationMs,
-      if (sourceInMs != null) 'sourceInMs': sourceInMs,
-      if (materialIndex != null) 'materialIndex': materialIndex,
-      if (enabled != null) 'enabled': enabled,
-      if (transition != null) 'transition': transition});
+      'id': ?id, 'label': ?label,
+      'startMs': ?startMs,
+      'durationMs': ?durationMs,
+      'sourceInMs': ?sourceInMs,
+      'materialIndex': ?materialIndex,
+      'enabled': ?enabled,
+      'transition': ?transition});
 }
 
 class StudioMarker {
@@ -205,13 +205,13 @@ class StudioProject {
   StudioProject copyWith({String? id, String? name, List<StudioClip>? clips,
     Map<String, dynamic>? lanes, List<StudioMarker>? markers,
     List<StudioKey>? keys, Map<String, dynamic>? exportSettings}) =>
-      StudioProject.fromJson({...toJson(), if (id != null) 'id': id,
-        if (name != null) 'name': name,
+      StudioProject.fromJson({...toJson(), 'id': ?id,
+        'name': ?name,
         if (clips != null) 'clips': clips.map((item) => item.toJson()).toList(),
-        if (lanes != null) 'lanes': lanes,
+        'lanes': ?lanes,
         if (markers != null) 'markers': markers.map((item) => item.toJson()).toList(),
         if (keys != null) 'keys': keys.map((item) => item.toJson()).toList(),
-        if (exportSettings != null) 'export': exportSettings});
+        'export': ?exportSettings});
 
   double evaluate(String parameter, int atMs, {double fallback = 1}) {
     final points = keys.where((key) => key.parameter == parameter).toList()

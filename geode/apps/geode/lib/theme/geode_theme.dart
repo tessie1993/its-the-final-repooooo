@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../three_d/depth_3d.dart';
 
 /// One material vocabulary shared by the scene's crisp, readable controls.
 abstract final class GeodeTokens {
@@ -69,8 +70,8 @@ abstract final class GeodeTokens {
           thumbColor: ink,
           overlayColor: ice.withValues(alpha: .13),
           trackHeight: 10,
-          trackShape: const RoundedRectSliderTrackShape(),
-          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10, elevation: 5),
+          trackShape: const GrooveTrackShape(),
+          thumbShape: const PebbleThumbShape(radius: 11),
           overlayShape: const RoundSliderOverlayShape(overlayRadius: 23),
         ),
         appBarTheme: const AppBarTheme(backgroundColor: Color(0xFF182C22),

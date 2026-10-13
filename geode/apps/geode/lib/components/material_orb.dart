@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../three_d/asset_3d.dart';
 
 /// An opaque, gently lit sample of moss, river stone or bark.
 class MaterialOrb extends StatelessWidget {
@@ -13,7 +14,8 @@ class MaterialOrb extends StatelessWidget {
   ];
   @override
   Widget build(BuildContext context) => SizedBox.square(dimension: size,
-    child: CustomPaint(painter: _PebblePainter(materialIndex.clamp(0, 2).toInt())));
+    child: Asset3D(asset: Geode3DAsset.pebble, variant: materialIndex.clamp(0, 2).toInt(),
+      fallback: CustomPaint(painter: _PebblePainter(materialIndex.clamp(0, 2).toInt()))));
 }
 
 class _PebblePainter extends CustomPainter {

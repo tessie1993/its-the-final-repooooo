@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'material_orb.dart';
+import '../three_d/asset_3d.dart';
 
 class SceneThumbnail extends StatelessWidget {
   const SceneThumbnail({super.key, required this.materialIndex, this.height = 140, this.child});
@@ -19,17 +20,17 @@ class SceneThumbnail extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.asset(
+            Asset3D(asset: Geode3DAsset.forestSanctuary, fallback: Image.asset(
               'assets/images/forest-sanctuary.png',
               fit: BoxFit.cover,
               alignment: Alignment(index * .55 - .55, .15),
               excludeFromSemantics: true,
               errorBuilder: (_, error, trace) => const ColoredBox(color: Color(0xFF173C45)),
-            ),
+            )),
             ColoredBox(color: tint),
             Align(
               alignment: Alignment(.1 + index * .2, -.24),
-              child: Image.asset(
+              child: Asset3D.boxed(asset: Geode3DAsset.fernDew, width: height * .94, height: height * .94, fallback: Image.asset(
                 'assets/images/fern-dew.png',
                 width: height * .94,
                 height: height * .94,
@@ -38,7 +39,7 @@ class SceneThumbnail extends StatelessWidget {
                 colorBlendMode: BlendMode.srcATop,
                 excludeFromSemantics: true,
                 errorBuilder: (_, error, trace) => MaterialOrb(materialIndex: index, size: height * .63),
-              ),
+              )),
             ),
             IgnorePointer(child: CustomPaint(painter: _DewPainter(index))),
             const DecoratedBox(
