@@ -20,6 +20,8 @@ pluginManagement {
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "9.1.0" apply false
+    // Plugin dependencies (just_audio, file_picker, ...) compile Kotlin; Flutter 3.47 requires KGP >= 2.2.20.
+    id("org.jetbrains.kotlin.android") version "2.4.0" apply false
 }
 
 include(":app")

@@ -50,8 +50,8 @@ class NatureLook {
     'particles': particles, 'natureDetails': natureDetails,
     'hue': hue, 'particleDensity': particleDensity,
     'rippleStrength': rippleStrength,
-    if (nativeScene != null) 'nativeScene': nativeScene!,
-    if (milkPreset != null) 'milkPreset': milkPreset!,
+    'nativeScene': ?nativeScene,
+    'milkPreset': ?milkPreset,
     'nativeParameters': nativeParameters,
   };
 

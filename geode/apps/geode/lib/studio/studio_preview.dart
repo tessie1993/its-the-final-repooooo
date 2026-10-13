@@ -143,9 +143,11 @@ class _TimelineAudio {
           final transition = (clip.transition['durationMs'] as num?)?.toDouble() ?? 0;
           final volume = transition <= 0 ? 1.0 : ((_atMs - clip.startMs) / transition).clamp(0.0, 1.0);
           await player.setVolume(volume);
-          if (_playing && !player.playing) unawaited(player.play().catchError((Object error) {
+          if (_playing && !player.playing) {
+            unawaited(player.play().catchError((Object error) {
             if (!_disposed) _onError?.call('Soundtrack preview failed: $error');
           }));
+          }
           if (!_playing && player.playing) await player.pause();
         }
       } while (_pending && !_disposed);

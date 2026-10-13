@@ -16,7 +16,8 @@ class ClipInspector extends StatelessWidget {
   Widget build(BuildContext context) {
     final clip = studio.selectedClip;
     final text = Theme.of(context).textTheme;
-    if (clip == null) return GelPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    if (clip == null) {
+      return GelPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Center(child: Image.asset('assets/images/crystal-fern.png', width: 130, height: 100,
         excludeFromSemantics: true, errorBuilder: (_, error, stack) => const Icon(Icons.spa_outlined, size: 58))),
       Text('A little detail changes everything.', style: text.titleLarge),
@@ -25,6 +26,7 @@ class ClipInspector extends StatelessWidget {
       const SizedBox(height: 18),
       KeyframeEditor(studio: studio, pausePreview: pausePreview),
     ]));
+    }
     final locked = studio.laneLocked(clip.lane);
     final transitionType = clip.transition['type'] as String? ?? 'none';
     final transitionDuration = (clip.transition['durationMs'] as num? ?? 800).toInt();

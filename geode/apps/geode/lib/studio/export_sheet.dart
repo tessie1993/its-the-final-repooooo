@@ -49,7 +49,9 @@ class _ExportSheetState extends State<ExportSheet> {
   String? _validSeconds(String? value) {
     final number = double.tryParse(value ?? '');
     if (number == null || !number.isFinite || number < 0 ||
-      number > widget.studio.selectedProject!.durationMs / 1000) return 'Enter a time within the project.';
+      number > widget.studio.selectedProject!.durationMs / 1000) {
+      return 'Enter a time within the project.';
+    }
     return null;
   }
 

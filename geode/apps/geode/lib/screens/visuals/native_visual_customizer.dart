@@ -49,9 +49,11 @@ class NativeVisualCustomizer extends StatelessWidget {
 
   Widget _control(BuildContext context, VisualParameter parameter) {
     final value = state.visualParameter(parameter);
-    if (parameter.toggle) return SwitchListTile(contentPadding: EdgeInsets.zero,
+    if (parameter.toggle) {
+      return SwitchListTile(contentPadding: EdgeInsets.zero,
       title: Text(parameter.label), value: value >= .5,
       onChanged: (enabled) => state.setVisualParameter(parameter, enabled ? 1 : 0));
+    }
     return Padding(padding: const EdgeInsets.only(bottom: 8), child: Column(children: [
       Row(children: [Expanded(child: Text(parameter.label)),
         Text(parameter.integer ? '${value.round()}' : value.toStringAsFixed(2),

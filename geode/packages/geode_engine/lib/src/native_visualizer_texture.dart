@@ -53,7 +53,9 @@ class _NativeVisualizerTextureState extends State<NativeVisualizerTexture>
       (logicalSize.height * pixelRatio * scale).round().clamp(1, 2048).toDouble(),
     );
     if (_texture != null && size == _surfaceSize &&
-        controller.ownsTexture(_texture, owner: _owner)) return;
+        controller.ownsTexture(_texture, owner: _owner)) {
+      return;
+    }
     final attempt = (size, controller.surfaceRevision);
     if (_attempt == attempt) return;
     _attempt = attempt;

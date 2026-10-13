@@ -145,14 +145,14 @@ class GeodeNative {
       channel.invokeMethod<void>('publishPlaybackState', state);
 
   /// Opens Android's live wallpaper preview for the currently selected scene.
-  Future<void> setWallpaper() => _channel.invokeMethod<void>('setWallpaper');
+  Future<void> setWallpaper() => channel.invokeMethod<void>('setWallpaper');
 
   /// Opens Android's screensaver picker; the user selects Geode there.
   Future<void> openScreensaverSettings() =>
-      _channel.invokeMethod<void>('openScreensaverSettings');
+      channel.invokeMethod<void>('openScreensaverSettings');
 
   /// Asks the launcher to add Geode's transport widget when supported.
   Future<bool> requestPinWidget() async =>
-      (await _channel.invokeMethod<bool>('requestPinWidget')) ?? false;
+      (await channel.invokeMethod<bool>('requestPinWidget')) ?? false;
 
 }
