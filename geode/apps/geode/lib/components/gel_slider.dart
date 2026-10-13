@@ -35,8 +35,10 @@ class GelSlider extends StatelessWidget {
         ),
         Semantics(
           label: label,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
+          // A bounded height: Slider ignores minHeight when its height is unbounded and
+          // sizes itself below the 48 dp touch target, failing layout.
+          child: SizedBox(
+            height: 48,
             child: Slider(
               value: normalized,
               onChanged: onChanged,

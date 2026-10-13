@@ -81,8 +81,6 @@ jobs:
         working-directory: geode/apps/geode
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: recursive
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -93,6 +91,11 @@ jobs:
           channel: stable
           cache: true
       - uses: gradle/actions/setup-gradle@v5
+      # setup-gradle validates every Gradle wrapper in the checkout, so fetch the C++
+      # dependencies afterwards: Oboe's example wrappers are never executed by this app.
+      - name: Download pinned C++ dependencies
+        working-directory: .
+        run: git submodule update --init --recursive
       - name: Verify original non-Kotlin source import
         working-directory: .
         run: python3 geode/tools/verify_source_import.py

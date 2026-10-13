@@ -30,6 +30,10 @@ dependencies:
     path: ../../packages/geode_playback
   geode_export:
     path: ../../packages/geode_export
+  flame_3d: ^0.3.2
+  ditredi: ^2.0.2
+  three_js: ^0.3.0
+  model_viewer_plus: ^1.10.0
 
 dev_dependencies:
   flutter_test:
@@ -45,5 +49,6 @@ flutter:
     - assets/images/crystal-fern.png
     - assets/images/stone-dial.png
     - assets/textures/
+    - assets/models/
   shaders:
     - shaders/nature_stone.frag
