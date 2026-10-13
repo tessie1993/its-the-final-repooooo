@@ -405,7 +405,7 @@ class _ScenePainter extends CustomPainter {
       final point = Offset(x + drift, y) + parallax;
       final glint = math.pow(math.max(0.0, math.sin(seed + t * .65)), 12).toDouble();
       final opacity = (.035 + depth * .08 + glint * .15 +
-          (reduced ? 0 : controller.audioTreble * .17)).clamp(0.0, 1.0).toDouble();
+          (reduced ? 0 : controller.audioTreble * .17) + controller.lightEnvelope * .12).clamp(0.0, 1.0).toDouble();
       final radius = .55 + depth * 1.1;
       if (depth > .9 && controller.highQuality) {
         paint..color = const Color(0xFFAEEEF6).withValues(alpha: opacity * .2)

@@ -1,3 +1,5 @@
+import '../three_d/pebble_dock.dart';
+import '../three_d/depth_3d.dart';
 import 'package:flutter/material.dart';
 import '../theme/geode_theme.dart';
 import 'gel_panel.dart';
@@ -21,7 +23,9 @@ class GelNavDock extends StatelessWidget {
         opacity: .72,
         blur: 22,
         padding: const EdgeInsets.all(6),
-        child: Row(
+        child: Stack(children: [
+          Positioned.fill(child: PebbleDock(selected: selectedIndex)),
+          Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: List.generate(labels.length, (index) {
             final active = index == selectedIndex;
@@ -29,13 +33,13 @@ class GelNavDock extends StatelessWidget {
               child: Semantics(
                 selected: active,
                 label: '${labels[index]} tab',
-                child: TextButton(
+                child: Depth3D(radius: 20, maxTilt: .12, child: TextButton(
                   onPressed: () => onChanged(index),
                   style: TextButton.styleFrom(
                     minimumSize: const Size(48, 63),
                     padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 10),
                     foregroundColor: active ? GeodeTokens.accent : GeodeTokens.muted,
-                    backgroundColor: active ? const Color(0xFF4D6240) : Colors.transparent,
+                    backgroundColor: active ? const Color(0x334D6240) : Colors.transparent,
                     side: active ? const BorderSide(color: Color(0xFF8B9F69)) : BorderSide.none,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
@@ -47,10 +51,11 @@ class GelNavDock extends StatelessWidget {
                           style: TextStyle(fontSize: 10, fontWeight: active ? FontWeight.w600 : FontWeight.w400)),
                     ]),
                   ),
-                ),
+                )),
               ),
             );
           }),
         ),
+        ]),
       );
 }

@@ -1,3 +1,4 @@
+import '../../three_d/nature_model_viewer.dart';
 import 'package:flutter/material.dart';
 import '../../components/components.dart';
 import '../../state/geode_app_state.dart';
@@ -36,6 +37,8 @@ class _VisualCustomizerScreenState extends State<VisualCustomizerScreen> {
               child: KeyedSubtree(key: ValueKey(_tab), child: switch (_tab) {
                 0 => _materials(context), 1 => _motion(context), _ => _palette(context),
               })),
+            const SizedBox(height: 22),
+            const NatureModelViewer(),
             const SizedBox(height: 22),
             VisualFloat(state: state, phase: 2.3, child: GelPanel(child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch, children: [

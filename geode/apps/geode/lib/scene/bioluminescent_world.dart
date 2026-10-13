@@ -92,12 +92,14 @@ class BioluminescentWorld {
     final count = controller.particlesEnabled
         ? (controller.particleDensity * (controller.highQuality ? 24 : 10)).round() : 0;
     for (var i = 0; i < _spores.length; i++) {
+      _spores[i].visible = i < count;
+      if (i >= count) continue;
       final phase = i * 2.399963;
       // Use a shared scene clock for freeze/resume and deterministic trajectories.
       final x = math.sin(phase) * 2.25 + math.sin(t * .17 + phase) * .12;
       final y = -2.1 + ((i * .31 + t * .055) % 3.9);
       final z = .3 + math.cos(phase) * .9;
-      final scale = i < count ? .65 + (i % 3) * .25 : 0.0;
+      final scale = .65 + (i % 3) * .25;
       _spores[i].mutateLocalTransform((matrix) => matrix
         ..setIdentity()
         ..translateByDouble(x, y, z, 1)

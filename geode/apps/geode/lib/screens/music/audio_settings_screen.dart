@@ -1,3 +1,4 @@
+import '../../three_d/spectrum_terrain.dart';
 import 'package:flutter/material.dart';
 import '../../components/components.dart';
 import '../../state/geode_app_state.dart';
@@ -24,6 +25,8 @@ class AudioSettingsScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Text('Small adjustments. A different feeling.', style: text.bodyLarge),
             const SizedBox(height: 28),
+            SpectrumTerrain(state: state),
+            const SizedBox(height: 22),
             GelFloat(controller: state.scene, anchor: const Offset(.5, .35), weight: 2.4,
               child: GelPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _slider(context, title: 'Volume', valueLabel: '${(music.volume * 100).round()}%',

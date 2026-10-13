@@ -111,7 +111,7 @@ class VisualizerScreen extends StatelessWidget {
             const SizedBox(height: 7),
             Text(_visualName, style: const TextStyle(fontSize: 22, letterSpacing: -.4)),
             const SizedBox(height: 5),
-            Text(state.nativeVisuals.enabled ? 'A world shaped by your sound' : 'Moss, stone & a little wonder',
+            Text(state.nativeVisuals.enabled ? 'A world shaped by your sound' : 'Living gel, glowing fungi & forest light',
               style: const TextStyle(fontSize: 11, color: GeodeTokens.muted)),
           ])),
           GelIconButton(icon: state.isEdited ? Icons.bookmark_add_outlined : state.favorites.contains(state.selectedLookId)
@@ -131,6 +131,11 @@ class VisualizerScreen extends StatelessWidget {
         ]) else GelMaterialPicker(selectedIndex: state.scene.materialIndex, onChanged: state.setMaterial),
         const SizedBox(height: 18),
         GelSlider(label: 'Flow intensity', value: state.scene.energy, onChanged: state.setEnergy),
+        if (!state.nativeVisuals.enabled) ...[
+          const SizedBox(height: 10),
+          GelSlider(label: 'Living light', value: state.scene.luminescence,
+            onChanged: state.setLuminescence),
+        ],
         const SizedBox(height: 8),
         Row(children: [
           Expanded(child: GelButton(label: state.scene.paused ? 'Let it flow' : 'Pause scene',

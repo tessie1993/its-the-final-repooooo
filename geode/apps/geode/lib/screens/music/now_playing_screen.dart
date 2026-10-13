@@ -1,3 +1,4 @@
+import '../../three_d/spectrum_terrain.dart';
 import 'package:flutter/material.dart';
 import '../../components/components.dart';
 import '../../components/player_orb.dart';
@@ -81,6 +82,8 @@ class NowPlayingScreen extends StatelessWidget {
                   onPressed: () => music.setRepeatMode((music.repeatMode + 1) % 3)),
               ]),
               const SizedBox(height: 26),
+              SpectrumTerrain(state: state),
+              const SizedBox(height: 22),
               Wrap(spacing: 10, runSpacing: 10, alignment: WrapAlignment.center, children: [
                 GelButton(label: 'Lyrics', icon: Icons.lyrics_outlined, primary: false,
                   onPressed: () => showLyrics(context, state)),

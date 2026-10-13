@@ -112,8 +112,8 @@ class PlayerOrbScene {
     }
     final material = controller.displayMaterial.clamp(0.0, 2.0).toDouble();
     _jade.roughnessFactor = .44 + material * .08;
-    final envelope = reducedMotion ? 0.0 : controller.audioRms * .6 + controller.audioBass * .25;
-    _jade.emissiveFactor = vm.Vector4(.08 + envelope * .3, .20 + envelope, .12 + envelope * .65, 1);
+    final envelope = controller.lightEnvelope;
+    _jade.emissiveFactor = vm.Vector4(envelope * .3, envelope, envelope * .65, 1);
     scene.renderScale = controller.highQuality ? .85 : .65;
     // The app owns time; the scene must not create an independent animation.
     scene.update(0);
