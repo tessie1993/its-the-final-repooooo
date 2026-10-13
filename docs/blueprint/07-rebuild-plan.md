@@ -1,104 +1,146 @@
-# 7 · Rebuild plan: what we reuse, what we rebuild
+# 7 · Rebuild plan: Player · Visualizer · Export Studio
 
-The product is three things on one engine:
+**This doc supersedes doc 6 for scope.** The product is three things:
 
-1. **Music player**: library, queue, playback with the native audio engine.
-2. **High-end music visualizer (C++)**: the existing visual styles on a native render host.
-3. **Export studio**: the visuals and cuts rendered to video.
+1. **Music player**: local library, queue, transport, EQ.
+2. **High-end music visualizer in C++**: every visual style the engine has, driven by the existing analysis.
+3. **Export studio**: render the visualizer to video, frame-exact, plus timeline editing.
 
-The UI is new, written in Flutter. The C++ engine, shaders and visual styles are kept. Everything the
-Kotlin did is either rebuilt in Dart (UI, state, logic, storage) or moved down into C++ (anything on
-the audio, render or encode path).
+Everything here reuses the existing C++ audio engine and visual styles. The Kotlin app is not
+ported file by file. We keep what the three pillars need and rebuild the rest smaller and
+cleaner.
 
-The basic navigable UI in [`app/`](../../app) already contains every screen of the old app. Each
-milestone below replaces some of its placeholder pages with real ones.
+---
 
-## 7.1 Reuse as-is (no rewrite)
+## 7.1 What we take as-is (no rewrite)
 
-| What | Where | Used by |
+| Asset | Path | Used by |
 |---|---|---|
-| Audio analysis: FFT, 64 bands, onsets, tempo, beat grid, bars, drums, chroma, key, structure, stereo | `geode/core/analysis` | Visualizer, Studio, Player spectrum |
-| Native player: MediaCodec decode, Hermite resampler, gapless/crossfade mixer, Oboe output | `geode/core/audio/player` | Player |
-| DSP chain: gain, 10-band EQ, bass boost, crossfeed, lookahead limiter | `geode/core/audio/dsp` | Player |
-| Tags (TagLib): read/write, ReplayGain, embedded art | `geode/core/library` | Library |
-| Renderer: frame graph, params, LFO/ADSR, transitions, safety clamp, thermal tiers, program cache | `geode/core/viz` | Visualizer, Studio |
-| Scenes: shader styles, Fluid (9 looks), Curl Flow, Water, Silk, Life, Acid, Mycelium, Cymatics, MilkDrop | `geode/core/viz/{scenes,fluid,compute}` | Visualizer, Studio |
-| 95 GLSL shaders, blue noise, cyclic palettes, 122 GL Transitions, 6 starter `.milk` | `geode/app/src/main/assets` | Visualizer, Studio |
-| The C API (`geode_api.h`) | `geode/core/api` | Dart FFI binds to it directly |
-| Third-party libs: projectM 4.1.7 (+ patch), kissfft, TagLib, Oboe | `geode/third_party` | — |
-| Fonts, theme-pack art and UI sounds | `geode/app/src/main/res` | Optional: only if the new design keeps the stone themes |
+| Audio analysis: FFT, 64 bands, onsets, tempo/beat/bar, drums, chroma/key, structure, stereo | `geode/core/analysis/*` | Visualizer, Studio |
+| Playback DSP: gain, 10-band EQ + bass boost, crossfeed, limiter | `geode/core/audio/dsp/*` | Player |
+| Native player: decode → resample → gapless/crossfade mixer → Oboe | `geode/core/audio/player/*` | Player |
+| Tag read/write (TagLib) | `geode/core/library/*` | Player |
+| Renderer frame graph, composite, trails, overlays, safety clamp, LFO/ADSR, motion, thermal tiers, touch | `geode/core/viz/*` | Visualizer, Studio |
+| Every scene family: ~40 shader styles, Fluid ×9, Curl Flow, Water, Silk, Life, Acid, Myco, Cymatics, MilkDrop | `geode/core/viz/scenes`, `fluid`, `compute` | Visualizer, Studio |
+| 95 shaders, LUTs, 122 GL Transitions, starter `.milk` presets | `geode/app/src/main/assets/*` | Visualizer, Studio |
+| C ABI (`geode_analysis_*`, `geode_dsp_*`, `geode_player_*`, `geode_tags_*`, `geode_viz_*`) | `geode/core/api/*` | Dart FFI |
+| Third-party: projectM, kissfft, TagLib, Oboe | `geode/third_party/*` | |
 
-## 7.2 Rebuild in C++ (replacing Kotlin hot paths)
+That is about 20k lines of C++ and 16k lines of GLSL. It is the hard, high-value part, and it
+already works.
 
-These were Kotlin calling into C++ 60–120 times a second over JNI. They move fully native, so the
-audio and render loops never wait on Flutter.
+## 7.2 What we rebuild
 
-| New native module | Replaces (Kotlin) | Needed for |
+### C++ (new native code: the parts Kotlin used to do on hot paths)
+
+| # | Module | Purpose | Based on (old Kotlin design) |
+|---|---|---|---|
+| N1 | `PcmRing` | Lock-free, sample-indexed PCM ring with epochs and explicit gap reporting | `PcmRingBuffer`, `SampleRing`, `AUDIO_FEATURE_ABI.md` |
+| N2 | `AnalysisThread` + `FeatureRing` | Hop-locked live analysis → timestamped feature frames | `AnalysisEngine`, `FeatureRing` |
+| N3 | `PresentationClock` | Maps audio played ↔ on-screen time (latency, seeks) | `AudioPresentationClock` |
+| N4 | `Engine` | Wraps `Player` + DSP chain + tap → `PcmRing`; one C API for Dart | `NativePlayer`, `NativeTapPump`, `NativePlayerDsp` |
+| N5 | `RenderHost` | Own EGL context + render thread drawing into a Flutter `Texture`; feeds features at presentation time | `VisualizerView`, `VisualizerRenderer` |
+| N6 | `FramePacer` | `AChoreographer` vsync pacing, fps cap, thermal feed | `FramePacer`, `ThermalGovernor` |
+| N7 | `OfflineAnalysis` + cache | Decode a whole track → feature timeline on disk (for the seek bar, Studio and export) | `OfflineAnalyzer`, `AnalysisCache`, `FeatureTimeline` |
+| N8 | `VideoExport` | Offscreen `geode_viz` frame by frame from the timeline → `AMediaCodec` H.264/HEVC + AAC → `AMediaMuxer` | `VideoExporter`, `EncoderSurface`, `AudioTranscoder` |
+| N9 | `Loudness` | BS.1770 LUFS metering of exports | `LoudnessMeter` |
+| N10 | `Compositor` (Studio v2) | Clip decode → grade/LUT/transition GL chain → encode | Media3 Transformer path |
+| N11 | Time-stretch (optional) | Speed/pitch control; ExoPlayer did this before | — (vendor a library) |
+
+### Dart / Flutter (new app code)
+
+Architecture follows the official Flutter architecture skill: views + ChangeNotifier view models in
+the UI layer, repositories + services in the data layer, `provider` for injection, `go_router` for
+navigation. The app map in `app/lib/app/spec/` is the single list of screens. The look sits behind
+`GeodeUiKit` (`app/lib/ui/ui_kit.dart`), so the basic skin can be replaced one screen at a time.
+
+| # | Area | Contents | Reference |
+|---|---|---|---|
+| D1 | Native bridge | `ffigen` bindings, handle wrappers with finalizers | `GeodeNative`, `NativeViz` |
+| D2 | Player | Library scan (MediaStore/folders), track list, search, queue, playlists, transport, mini player, EQ, ReplayGain, sleep timer, lyrics | `ui/Library*`, `QueueController`, `playback/*` |
+| D3 | Visualizer | Fullscreen view (`Texture`), style browser, Customize panel (params/locks/randomize, LFO/ADSR, palettes), presets (save/share), transitions, background image, touch | `VisualizerScreen`, `VisualsHub`, `CustomizeTabs`, `render/scene/*` |
+| D4 | Studio | Track + range picker, export settings (codec/quality/aspect/fps), progress + ETA, loudness readout, clip library. v2: timeline (lanes, keyframes, markers, auto-cut, captions, transitions) | `ExportController`, `editor/*`, `ui/studio/*` |
+| D5 | Data | JSON stores (presets, playlists, projects, prefs) with atomic writes; preset JSON stays compatible with the old app | `data/*` |
+| D6 | Design system | One clean theme first, with dark and glass styling to match the visuals | `Crystal*`, `StoneTheme` |
+
+### Data to recover from the old Kotlin (step 0)
+
+The Visualizer and Studio need these, and they exist only in Kotlin source:
+
+| Data | From | Needed for |
 |---|---|---|
-| `PcmRing` + `AnalysisThread` + `FeatureRing` + `PresentationClock` | `PcmRingBuffer`, `SampleRing`, `AnalysisEngine`, `FeatureRing`, `AudioPresentationClock`, `PcmTap`, `NativeTapPump` | Visualizer reacting in sync with what you hear |
-| `Engine` (player + DSP + tap, one handle for Dart) | `NativePlayer`, `NativePlayerDsp`, `PlaybackEngine` | Player |
-| Time-stretch (speed/pitch) and skip-silence in the mixer | Media3's Sonic and silence-skipping processors | Player (ExoPlayer is dropped) |
-| `RenderHost` (EGL context + render thread on a Flutter `SurfaceProducer`) + `FramePacer` (AChoreographer, thermal) | `VisualizerView`, `VisualizerRenderer`, `FramePacer`, `ThermalGovernor` | Visualizer |
-| `CaptureSource` (Oboe input) | `MicCapture`, `AudioCapturePump` | Visualizer on microphone input |
-| `OfflineAnalysis` + analysis cache + `FeatureTimeline` | `OfflineAnalyzer`, `AnalysisCache`, `FeatureTimeline`, `FrameAccumulator`, `AiffPcm` | Studio, waveform seek bar |
-| Export: offscreen render → `AMediaCodec` (H.264/HEVC + AAC) → `AMediaMuxer`, LUFS meter | `VideoExporter`, `EncoderSurface`, `AudioTranscoder`, `LoudnessMeter`, `OffscreenSceneRenderer` | Studio |
-| Loop render + loop-extend (remux) | `LoopRender`, `LoopExtend` | Studio |
-| Timeline compositor (decode clips → GL effects, LUTs, transitions, captions → encode) | Media3 Transformer path (`StudioExporter`, `ProjectComposition`, `ClipEdit`…) | Studio timeline export |
-| FFI surface (`geode_engine_*`, `geode_surface_*`, `geode_capture_*`, `geode_export_*`) | `GeodeNative` (JNI) | Everything |
+| Scene/style catalog (ids, labels, families, capabilities) | `SceneIds`, `SceneCapabilities`, `VisualStyleCatalog` | Style browser |
+| Parameter names, defaults, which params apply to which style | `ParamKeys`, `SceneParams`, `ParamScope` | Customize panel |
+| Built-in presets (13 looks) | `BuiltInPresets` | Visualizer |
+| Bundled video templates (6) | `TemplateRepository` | Studio |
+| EQ presets | `AudioFxPresets` | Player |
 
-## 7.3 Rebuild in Flutter/Dart
+Method: compile those files once with stubs and dump them to JSON, so the values are exact.
+This had started and is paused. Hand-porting is the fallback.
 
-The architecture follows the official Flutter architecture skill: a UI layer of views + ChangeNotifier
-view models, a data layer of repositories + services, and an optional domain layer.
+## 7.3 What we drop or defer
 
-| Area | Rebuilt from (Kotlin) | Notes |
+| Feature | Decision |
+|---|---|
+| Android Auto, lock-screen browse tree | **Defer.** Keep basic media notification + lock-screen controls (needed for background playback) |
+| Live wallpaper, Daydream, home-screen widget, second screen | **Defer** (the `RenderHost` makes them cheap to add later) |
+| Visualizing other apps' audio (MediaProjection), notification listener | **Defer** |
+| Microphone input | **Optional, cheap** (Oboe input → `PcmRing`) |
+| 10 "stone" theme packs (960 images, sounds, haptics) | **Defer.** Ship one theme; the art stays in `geode/` for later |
+| ExoPlayer / Media3 | **Drop.** The native engine is the only player |
+| Performance takes, smart playlists, duplicate finder, tag editing UI | **Later** |
+| Loop render / loop-extend (hours-long) | **Studio v2** |
+| Bit-perfect USB | **Drop for now** |
+
+## 7.4 Milestones
+
+| M | Deliverable | Done when |
 |---|---|---|
-| All screens | `ui/*`, `ui/studio/*`, `ui/theme/*` | New design; the basic skin is the placeholder |
-| Library: MediaStore scan, folders, track store, search, sort, duplicates | `MusicLibraryController`, `TrackLibrary`, `LibraryBrowse`, `LibraryDuplicates` | MediaStore through a plugin |
-| Playlists, smart playlists, M3U/PLS/XSPF | `MusicPlaylistStore`, `SmartPlaylistStore`, `PlaylistFormats` | Same JSON formats |
-| Queue, history, sleep timer, ReplayGain, bookmarks, fades | `QueueController`, `HistoryStore`, `SleepTimer`, `ReplayGain`, `TrackBookmarks`, `PlaybackFades` | |
-| Visual settings, presets, templates, textures, takes | `VisualSettingsController`, `PresetStore`, `TemplateFormat`/`Repository`, `TextureStore`, `TakeStore` | Same JSON so old presets load |
-| Customize: parameter catalog, scopes, randomizer, A/B, locks | `SceneParams`, `ParamKeys`, `ParamScope`, `ParamRandomizer`, `ParamBlend`, `ModulationController` | Parameter order comes from `geode_viz_param_name` |
-| Auto visuals, scene suggestion, key/art palette | `AutoVisualsController`, `SceneSuggester`, `KeyPalette`, `ArtPalette` | |
-| Studio editor model: timeline, keyframes, markers, auto-cut, subtitles, chapters | `editor/*`, `ChapterMarkers` | Pure logic, a direct port |
-| Share links (presets, templates) | `PresetLink` | Same bounded-inflate limits |
+| **M0 Foundation** | Flutter app created (`app/`, **done**: basic UI that walks every screen), native moved to `native/` with CMake wired into the Flutter Android build, JNI files removed, catalog data recovered to JSON | `flutter build apk` builds `libgeode.so` for arm64 + x86_64 |
+| **M1 First frame** | N5 RenderHost + N6 pacer + D1 bridge: one shader style on screen in a `Texture`, driven by a test tone through N1/N2 | Style animates to the tone at 60 fps; no Dart work per frame |
+| **M2 Player** | N4 Engine + N3 clock + D2: scan library, play, queue, seek, EQ, notification controls | A real track plays gaplessly, the visuals react in sync |
+| **M3 Visualizer** | D3: every style selectable, Customize panel, presets, transitions, background, touch, MilkDrop presets | Every scene in the catalog renders; presets round-trip |
+| **M4 Studio v1** | N7 + N8 + N9 + D4: pick track + range + style/preset → frame-exact video with audio, saved to the gallery | Exported MP4 matches the live look; LUFS shown |
+| **M5 Studio v2** | Timeline editor: keyframes, markers, auto-cut, captions, clip lanes + N10 compositor, GL Transitions | Multi-clip project exports |
+| **M6 Polish** | Performance/thermal, safety review, theme work, deferred features as wanted | Device checklist passes |
 
-## 7.4 Data that only exists inside Kotlin: extract first
+## 7.5 Which placeholder pages each milestone makes real
 
-The theme packs, built-in presets, bundled templates, style catalog, parameter names and scopes,
-scene capabilities, icon paths, EQ presets, help and tutorial copy live only in Kotlin source. They
-are extracted to JSON by compiling those files once and dumping their values. That way nothing is
-re-typed by hand.
+`app/` already lets you walk every screen of the old app. Each page lists what it did and what will
+power it. As milestones land, the generic placeholder for a page is replaced by a real screen,
+through the UI kit, without touching the routes.
 
-Status: the extraction workspace compiles most of them. It was **paused at your request** before the
-last two dependencies were added. Finishing it is the first task of milestone 1.
+| Milestone | Placeholder pages replaced |
+|---|---|
+| M1 First frame | Visualizer (full screen), first draw only |
+| M2 Player | Player, Queue, Library › Tracks / Albums / Artists / Folders / Playlists, Search, Settings › Audio |
+| M3 Visualizer | Visualizer (full), Visuals › Presets / Styles / Customize / Textures, Background and Templates sheets |
+| M4 Studio v1 | Studio clip library, Export (visualizer video), Settings › Export |
+| M5 Studio v2 | Timeline and its sheets, Clip editor, Export › Loop render |
+| M6 Polish | Visuals › Takes, Library › Duplicates, Track info, the rest of Settings, first run and tour styling |
 
-## 7.5 Drop or defer
+## 7.6 How we build it (fleet, approved: small)
 
-| Item | Decision | Why |
+After M0 lands (I do it solo, because everything depends on it), work splits into parallel tracks
+with fixed contracts:
+
+| Worker | Owns | Input contract |
 |---|---|---|
-| ExoPlayer / Media3 playback path, platform audiofx | **Drop** | The native engine already does gapless, crossfade, EQ and bit-perfect |
-| Hilt, Compose theme machinery, Kotlin mirrors of native math (`CymaticsMath`, `VisualSafety`, `LiveSignal`) | **Drop** | Replaced by Flutter or already native |
-| Android Auto browse tree, home-screen widget | **Defer** to milestone 4 | Needs Android shims (see D1 in doc 6) |
-| Live wallpaper, screensaver, second screen, PiP | **Defer** to milestone 4 | Reuse `RenderHost` behind thin Java shims |
-| Other apps' audio capture (MediaProjection) | **Defer** to milestone 4 | Java-only API; shim feeds the C++ ring |
-| Stone theme packs (960 images, sounds, haptics) | **Your call** | Keep if the new design wants them, otherwise retire |
+| Native-audio | N1–N4, N7 | `geode_api.h` + new `geode_engine_*` header written first |
+| Native-render | N5, N6, then N8–N10 | `geode_surface_*`, `geode_export_*` headers |
+| Dart-player | D1, D2, D5 | Engine header + ffigen |
+| Dart-visualizer | D3, D6 | Viz header + catalog JSON |
+| Dart-studio | D4 | Export header + editor domain spec |
 
-## 7.6 Milestones
+I write every header contract before any worker starts. Each worker delivers one module per
+commit.
 
-Each milestone ends with something you can install and use. Placeholder pages in `app/` are replaced
-as their milestone lands.
+## 7.7 Open decisions
 
-| # | Milestone | Native work | Flutter work | Pages made real |
-|---|---|---|---|---|
-| 0 | **Foundation** | CMake builds `libgeode.so` inside the Flutter app; FFI bindings via ffigen | Finish the Kotlin data extraction (§7.4) | — |
-| 1 | **Music player** | `Engine` (player + DSP + tap), time-stretch, skip-silence | Library, queue, playlists, smart playlists, transport, EQ, background playback + media notification | Player, Library (all tabs), Queue, Settings › Audio |
-| 2 | **Visualizer** | `RenderHost`, `FramePacer`, `PcmRing`/`AnalysisThread`/`FeatureRing`/`PresentationClock`, `CaptureSource` (mic) | Styles, Customize, presets, MilkDrop + textures, auto visuals, background image, touch | Visualizer (full screen), Visuals hub (all tabs) |
-| 3 | **Export studio** | `OfflineAnalysis`, export pipeline, LUFS, loop render, then the timeline compositor | Clip library, clip editor, export screens, then the timeline editor | Studio (all pages), Settings › Export |
-| 4 | **Everywhere else** | Shims: media session/Android Auto, wallpaper, screensaver, widget, capture service | Takes, templates, second screen, PiP | Remaining placeholders |
-
-## 7.7 Decisions for you
-
-- **D1:** Android shims for the deferred features. They can't be written in Flutter or C++ (doc 6).
-- **Theme packs:** keep the stone themes in the new UI, or retire them (§7.5).
-- **Order:** is Player → Visualizer → Studio right, or should the visualizer come first? It can run on the microphone before the player is rebuilt.
+| # | Question | Default if you don't choose |
+|---|---|---|
+| Q1 | Studio v1 scope: visualizer-to-video only, or include the timeline editor straight away? | Visualizer-to-video first (M4), timeline in M5 |
+| Q2 | Mic input in the first release? | Yes, it is cheap |
+| Q3 | Speed/pitch control in the player? | Later (needs a vendored time-stretch library, licence check) |
+| Q4 | Keep old preset/template JSON compatibility? | Yes |
+| Q5 | Theme direction: one new theme, or port one stone pack first? | One new dark glass theme |
